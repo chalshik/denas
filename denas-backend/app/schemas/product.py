@@ -14,7 +14,7 @@ class AvailabilityType(enum.Enum):
 class ProductBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=150)
     description: Optional[str] = None
-    price: Decimal = Field(..., gt=0, decimal_places=2)
+    price: Decimal = Field(..., gt=0)
     stock_quantity: int = Field(0, ge=0)
     availability_type: AvailabilityType = AvailabilityType.IN_STOCK
     preorder_available_date: Optional[datetime] = None
@@ -29,7 +29,7 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=150)
     description: Optional[str] = None
-    price: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    price: Optional[Decimal] = Field(None, gt=0)
     stock_quantity: Optional[int] = Field(None, ge=0)
     availability_type: Optional[AvailabilityType] = None
     preorder_available_date: Optional[datetime] = None

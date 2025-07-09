@@ -12,7 +12,6 @@ class UserRole(enum.Enum):
 
 class UserBase(BaseModel):
     uid: str
-    username: str
     email: EmailStr
     role: UserRole = UserRole.USER
 
@@ -23,7 +22,6 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     uid: Optional[str] = None
-    username: Optional[str] = None
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
 

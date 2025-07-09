@@ -4,7 +4,7 @@ from .product import (
     ProductWithImages, ProductWithCategory, ProductWithDetails, AvailabilityType
 )
 from .category import Category, CategoryCreate, CategoryUpdate, CategoryInDB, CategoryWithProducts
-from .product_image import ProductImage, ProductImageCreate, ProductImageUpdate, ProductImageInDB, ImageType
+from .product_image import ProductImage, ProductImageCreate, ProductImageUpdate, ProductImageInDB, ProductImageWithProduct, ImageType
 from .order import Order, OrderCreate, OrderUpdate, OrderInDB, OrderWithItems, OrderWithUser, OrderStatus
 from .order_item import OrderItem, OrderItemCreate, OrderItemUpdate, OrderItemInDB, OrderItemWithProduct, OrderItemWithOrder
 from .shopping_cart import ShoppingCart, ShoppingCartCreate, ShoppingCartUpdate, ShoppingCartInDB, ShoppingCartWithItems, ShoppingCartWithUser
@@ -21,7 +21,7 @@ __all__ = [
     # Category schemas
     "Category", "CategoryCreate", "CategoryUpdate", "CategoryInDB", "CategoryWithProducts",
     # Product Image schemas
-    "ProductImage", "ProductImageCreate", "ProductImageUpdate", "ProductImageInDB", "ImageType",
+    "ProductImage", "ProductImageCreate", "ProductImageUpdate", "ProductImageInDB", "ProductImageWithProduct", "ImageType",
     # Order schemas
     "Order", "OrderCreate", "OrderUpdate", "OrderInDB", "OrderWithItems", "OrderWithUser", "OrderStatus",
     # Order Item schemas

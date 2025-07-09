@@ -1,24 +1,24 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from decimal import Decimal
+from datetime import datetime
 
 
 class OrderItemBase(BaseModel):
     order_id: int
     product_id: int
     quantity: int = Field(..., gt=0)
-    price: Decimal = Field(..., gt=0, decimal_places=2)  # Price at time of order
+    price: Decimal = Field(..., gt=0)  # Price at time of order
 
 
-class OrderItemCreate(BaseModel):
-    product_id: int
-    quantity: int = Field(..., gt=0)
-    # price will be fetched from product at order time
+class OrderItemCreate(OrderItemBase):
+    order_id: int
 
 
 class OrderItemUpdate(BaseModel):
+    product_id: Optional[int] = None
     quantity: Optional[int] = Field(None, gt=0)
-    price: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    price: Optional[Decimal] = Field(None, gt=0)
 
 
 class OrderItemInDB(OrderItemBase):

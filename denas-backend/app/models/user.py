@@ -14,7 +14,6 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     uid = Column(String(100), unique=True, nullable=False, index=True)
-    username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, nullable=False, index=True)
     role = Column(Enum(UserRole), default=UserRole.USER, nullable=False)
     created_at = Column(TIMESTAMP, default=func.now())

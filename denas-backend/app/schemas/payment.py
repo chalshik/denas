@@ -9,12 +9,14 @@ class PaymentStatus(enum.Enum):
     PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
+    REFUNDED = "refunded"
 
 
 class PaymentBase(BaseModel):
     order_id: int
-    payment_provider: str = Field(..., max_length=50)
-    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    amount: Decimal = Field(..., gt=0)
+    payment_method: str = Field(..., min_length=1, max_length=50)
     status: PaymentStatus = PaymentStatus.PENDING
 
 
@@ -23,8 +25,8 @@ class PaymentCreate(PaymentBase):
 
 
 class PaymentUpdate(BaseModel):
-    payment_provider: Optional[str] = Field(None, max_length=50)
-    amount: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    amount: Optional[Decimal] = Field(None, gt=0)
+    payment_method: Optional[str] = Field(None, min_length=1, max_length=50)
     status: Optional[PaymentStatus] = None
 
 

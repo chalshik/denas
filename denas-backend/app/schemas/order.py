@@ -7,15 +7,17 @@ import enum
 
 class OrderStatus(enum.Enum):
     PENDING = "pending"
-    PAID = "paid"
+    CONFIRMED = "confirmed"
+    PROCESSING = "processing"
+    SHIPPED = "shipped"
+    DELIVERED = "delivered"
     CANCELLED = "cancelled"
-    COMPLETED = "completed"
 
 
 class OrderBase(BaseModel):
     user_id: int
     status: OrderStatus = OrderStatus.PENDING
-    total_price: Decimal = Field(..., gt=0, decimal_places=2)
+    total_price: Decimal = Field(..., gt=0)
 
 
 class OrderCreate(BaseModel):
@@ -25,7 +27,7 @@ class OrderCreate(BaseModel):
 
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
-    total_price: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    total_price: Optional[Decimal] = Field(None, gt=0)
 
 
 class OrderInDB(OrderBase):
