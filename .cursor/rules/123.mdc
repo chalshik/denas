@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This project is a monorepo with both frontend and backend code.
+
+- The backend is built with **FastAPI** (Python), using modular routers and pydantic models for request and response validation.
+- API endpoints follow RESTful design with clear separation of concerns.
+- Business logic is not mixed with routes; routes call service-layer functions.
+- Database interactions use SQLAlchemy (or your ORM of choice).
+- Asynchronous programming is preferred with `async def`.
+- To run backend used docker-compose file.
+
+- The frontend uses **Hero UI library v2.7.8**, built with React and Tailwind CSS.
+- Components should be reusable, styled with Hero UI conventions.
+- The UI uses hooks for state and effect management, with attention to accessibility and responsiveness.
+- Shared components and utility hooks are placed under `/oms-sf-frontend/app/components` and `/oms-sf-frontend/app/hooks`.
+
+General rules:
+- Follow DRY (Don't Repeat Yourself) and SOLID principles.
+- Maintain consistent code formatting (black/isort for Python, Prettier/ESLint for JS/TS).
+- Favor type hints in Python and TypeScript where possible.
+- Write clear docstrings (Python) and JSDoc (JS/TS) for all exported functions.
+- When unsure, prefer readability and simplicity over cleverness.
+
+

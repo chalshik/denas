@@ -1,29 +1,53 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
+import enum
+
+
+class UserRole(enum.Enum):
+    USER = "User"
+    ADMIN = "Admin"
+    MANAGER = "Manager"
+
 
 class UserBase(BaseModel):
-    email: EmailStr
+    uid: str
     username: str
-    is_active: Optional[bool] = True
-    is_superuser: Optional[bool] = False
+    email: EmailStr
+    role: UserRole = UserRole.USER
+
 
 class UserCreate(UserBase):
-    password: str
-
-class UserUpdate(UserBase):
-    password: Optional[str] = None
-
-class UserInDBBase(UserBase):
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        orm_mode = True
-
-class User(UserInDBBase):
     pass
 
-class UserInDB(UserInDBBase):
-    hashed_password: str 
+
+class UserUpdate(BaseModel):
+    uid: Optional[str] = None
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    role: Optional[UserRole] = None
+
+
+class UserInDB(UserBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class User(UserBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserWithDetails(User):
+    orders: Optional[list] = []
+    favorites: Optional[list] = []
+    shopping_cart: Optional[dict] = None
+
+    class Config:
+        from_attributes = True 
