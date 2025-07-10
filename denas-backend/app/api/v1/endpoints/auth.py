@@ -26,14 +26,14 @@ async def register_user(
     db: Session = Depends(get_db)
 ):
     """
-    Register a new user with Firebase UID and email
-    The Firebase token provides the UID, email comes from request body
+    Register a new user with Firebase UID and phone number
+    The Firebase token provides the UID, phone comes from request body
     """
     try:
         user = await UserService.create_user(
             db=db,
             uid=firebase_uid,
-            email=request.email
+            phone=request.phone
         )
         
         logger.info(f"User registered successfully: {user.id} with UID: {firebase_uid}")
@@ -80,8 +80,8 @@ async def get_or_create_user(
             logger.info(f"Existing user found: {user.id} with UID: {firebase_uid}")
             return user
         
-        # User doesn't exist, we need email to create
-        # In this case, the frontend should call /register with email
+        # User doesn't exist, we need phone number to create
+        # In this case, the frontend should call /register with phone
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found. Please complete registration first."
@@ -223,15 +223,9 @@ async def search_users(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_admin_access)
 ):
-    """
-    Search users by email or UID (Admin only)
-    """
+    """Search users by phone or UID (admin only)"""
     try:
-        users = await UserService.search_users(
-            db=db,
-            search_term=q,
-            limit=limit
-        )
+        users = await UserService.search_users(db, q, limit)
         return users
         
     except Exception as e:

@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 import enum
+import re
 
 
 class UserRole(enum.Enum):
@@ -10,10 +11,27 @@ class UserRole(enum.Enum):
     MANAGER = "Manager"
 
 
+def validate_phone(phone: str) -> str:
+    """Validate phone number format"""
+    # Remove all non-digit characters except +
+    cleaned = re.sub(r'[^\d+]', '', phone)
+    
+    # Check if it's a valid international format
+    if not re.match(r'^\+?[1-9]\d{1,14}$', cleaned):
+        raise ValueError('Invalid phone number format')
+    
+    return cleaned
+
+
 class UserBase(BaseModel):
     uid: str
-    email: EmailStr
+    phone: str = Field(..., description="Phone number in international format")
     role: UserRole = UserRole.USER
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class UserCreate(UserBase):
@@ -22,8 +40,15 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     uid: Optional[str] = None
-    email: Optional[EmailStr] = None
+    phone: Optional[str] = Field(None, description="Phone number in international format")
     role: Optional[UserRole] = None
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_field(cls, v):
+        if v is not None:
+            return validate_phone(v)
+        return v
 
 
 class UserInDB(UserBase):

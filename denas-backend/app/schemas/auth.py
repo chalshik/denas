@@ -1,11 +1,16 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from app.schemas.user import User, UserRole
+from app.schemas.user import User, UserRole, validate_phone
 
 
 class UserRegistrationRequest(BaseModel):
     """User registration request schema"""
-    email: EmailStr
+    phone: str = Field(..., description="Phone number in international format")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class UserStatsResponse(BaseModel):
@@ -29,7 +34,12 @@ class UserListResponse(BaseModel):
 
 class AuthRequest(BaseModel):
     """Base authentication request schema"""
-    email: EmailStr
+    phone: str = Field(..., description="Phone number in international format")
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_field(cls, v):
+        return validate_phone(v)
 
 
 class LoginRequest(AuthRequest):
@@ -48,14 +58,21 @@ class AuthResponse(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     """Profile update request schema"""
-    email: Optional[EmailStr] = None
+    phone: Optional[str] = Field(None, description="Phone number in international format")
     role: Optional[UserRole] = None
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone_field(cls, v):
+        if v is not None:
+            return validate_phone(v)
+        return v
 
 
 class TokenInfo(BaseModel):
     """Firebase token information"""
     uid: str
-    email: Optional[str] = None
-    email_verified: Optional[bool] = False
+    phone: Optional[str] = None
+    phone_verified: Optional[bool] = False
     name: Optional[str] = None
     picture: Optional[str] = None 
