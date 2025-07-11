@@ -44,4 +44,10 @@ class ProductImageWithProduct(ProductImageInDB):
     product: Optional["Product"] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+
+# Rebuild model to resolve forward references
+# Import Product for runtime use
+from app.schemas.product import Product
+ProductImageWithProduct.model_rebuild() 
