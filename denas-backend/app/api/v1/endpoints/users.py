@@ -42,7 +42,7 @@ async def update_my_profile(
 ):
     """Update current user's profile (limited fields)"""
     try:
-        # Users can only update their own email (role changes require admin)
+        # Users can only update their own phone (role changes require admin)
         if user_update.role is not None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -56,20 +56,20 @@ async def update_my_profile(
             )
         
         # Update allowed fields
-        if user_update.email is not None:
-            # Check if email is already taken by another user
+        if user_update.phone is not None:
+            # Check if phone is already taken by another user
             existing_user = db.query(UserModel).filter(
-                UserModel.email == user_update.email,
+                UserModel.phone == user_update.phone,
                 UserModel.id != current_user.id
             ).first()
             
             if existing_user:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Email already registered"
+                    detail="Phone number already registered"
                 )
             
-            current_user.email = user_update.email
+            current_user.phone = user_update.phone
         
         db.commit()
         db.refresh(current_user)
@@ -158,13 +158,13 @@ async def update_user(
                 detail="User not found"
             )
         
-        # Check if email is already taken (if being updated)
-        if user_update.email and user_update.email != user.email:
-            existing_user = await UserService.get_user_by_email(db, user_update.email)
+        # Check if phone is already taken (if being updated)
+        if user_update.phone and user_update.phone != user.phone:
+            existing_user = await UserService.get_user_by_phone(db, user_update.phone)
             if existing_user and existing_user.id != user_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Email already registered"
+                    detail="Phone number already registered"
                 )
         
         # Update fields
@@ -217,7 +217,7 @@ async def search_users(
     admin_user: UserModel = Depends(require_admin_access),
     db: Session = Depends(get_db)
 ):
-    """Search users by email or UID (admin only)"""
+    """Search users by phone or UID (admin only)"""
     try:
         users = await UserService.search_users(
             db=db,

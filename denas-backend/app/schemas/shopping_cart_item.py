@@ -1,5 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from typing import Optional
+from decimal import Decimal
+
+from .product import ProductResponse
 
 
 class ShoppingCartItemBase(BaseModel):
@@ -9,12 +12,14 @@ class ShoppingCartItemBase(BaseModel):
 
 
 class ShoppingCartItemCreate(BaseModel):
+    """Schema for creating a new cart item"""
     product_id: int
-    quantity: int = Field(..., gt=0)
+    quantity: int = Field(..., gt=0, description="Quantity must be greater than 0")
 
 
 class ShoppingCartItemUpdate(BaseModel):
-    quantity: Optional[int] = Field(None, gt=0)
+    """Schema for updating cart item quantity"""
+    quantity: int = Field(..., gt=0, description="Quantity must be greater than 0")
 
 
 class ShoppingCartItemInDB(ShoppingCartItemBase):
@@ -25,19 +30,19 @@ class ShoppingCartItemInDB(ShoppingCartItemBase):
 
 
 class ShoppingCartItem(ShoppingCartItemInDB):
+    """Basic cart item without relationships"""
     pass
 
 
 class ShoppingCartItemWithProduct(ShoppingCartItemInDB):
-    product: Optional[dict] = None
-    subtotal: Optional[float] = None
-
-    class Config:
-        from_attributes = True
-
-
-class ShoppingCartItemWithCart(ShoppingCartItemInDB):
-    cart: Optional[dict] = None
+    """Cart item with full product details"""
+    product: ProductResponse
+    
+    @computed_field
+    @property
+    def subtotal(self) -> float:
+        """Calculate subtotal for this item"""
+        return float(self.product.price * self.quantity)
 
     class Config:
         from_attributes = True 

@@ -1,8 +1,8 @@
-"""Add favorites table
+"""Initial migration with phone numbers
 
-Revision ID: 344f2735de14
-Revises: fbf1e7bb0e6f
-Create Date: 2025-07-09 12:51:42.255791
+Revision ID: 2b3f505a0a64
+Revises: 
+Create Date: 2025-07-10 14:20:21.745658
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '344f2735de14'
-down_revision: Union[str, None] = 'fbf1e7bb0e6f'
+revision: str = '2b3f505a0a64'
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -23,19 +23,19 @@ def upgrade() -> None:
     op.create_table('categories',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('username', sa.String(length=50), nullable=False),
-    sa.Column('email', sa.String(length=100), nullable=False),
-    sa.Column('password_hash', sa.Text(), nullable=False),
+    sa.Column('uid', sa.String(length=100), nullable=False),
+    sa.Column('phone', sa.String(length=20), nullable=False),
     sa.Column('role', sa.Enum('USER', 'ADMIN', 'MANAGER', name='userrole'), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
+    op.create_index(op.f('ix_users_phone'), 'users', ['phone'], unique=True)
+    op.create_index(op.f('ix_users_uid'), 'users', ['uid'], unique=True)
     op.create_table('orders',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -142,8 +142,8 @@ def downgrade() -> None:
     op.drop_table('products')
     op.drop_index(op.f('ix_orders_user_id'), table_name='orders')
     op.drop_table('orders')
-    op.drop_index(op.f('ix_users_username'), table_name='users')
-    op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_index(op.f('ix_users_uid'), table_name='users')
+    op.drop_index(op.f('ix_users_phone'), table_name='users')
     op.drop_table('users')
     op.drop_table('categories')
     # ### end Alembic commands ###

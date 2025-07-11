@@ -17,9 +17,9 @@ class UserService:
         return db.query(User).filter(User.uid == uid).first()
     
     @staticmethod
-    async def get_user_by_email(db: Session, email: str) -> Optional[User]:
-        """Get user by email address"""
-        return db.query(User).filter(User.email == email).first()
+    async def get_user_by_phone(db: Session, phone: str) -> Optional[User]:
+        """Get user by phone number"""
+        return db.query(User).filter(User.phone == phone).first()
     
     @staticmethod
     async def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
@@ -30,7 +30,7 @@ class UserService:
     async def create_user(
         db: Session, 
         uid: str, 
-        email: str,
+        phone: str,
         role: UserRole = UserRole.USER
     ) -> User:
         """
@@ -41,7 +41,7 @@ class UserService:
         try:
             user = User(
                 uid=uid,
-                email=email,
+                phone=phone,
                 role=role
             )
             
@@ -65,7 +65,7 @@ class UserService:
     async def get_or_create_user(
         db: Session,
         uid: str,
-        email: str
+        phone: str
     ) -> User:
         """
         Get existing user or create new user if doesn't exist
@@ -80,7 +80,7 @@ class UserService:
                 return user
             else:
                 # User doesn't exist - create new user
-                user = await UserService.create_user(db, uid, email)
+                user = await UserService.create_user(db, uid, phone)
                 logger.info(f"New user created: {user.id} with UID: {uid}")
                 return user
                     
@@ -210,14 +210,13 @@ class UserService:
         limit: Optional[int] = 50
     ) -> List[User]:
         """
-        Search users by email or UID
-        Returns: list of matching users
+        Search users by phone or UID
         """
         try:
             search_pattern = f"%{search_term}%"
             
             users = db.query(User).filter(
-                (User.email.ilike(search_pattern)) |
+                (User.phone.ilike(search_pattern)) |
                 (User.uid.ilike(search_pattern))
             ).limit(limit).all()
             
@@ -225,4 +224,4 @@ class UserService:
             
         except Exception as e:
             logger.error(f"Error searching users: {str(e)}")
-            return []
+            raise e

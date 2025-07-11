@@ -1,10 +1,7 @@
-from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, TYPE_CHECKING
+from pydantic import BaseModel, Field
+from typing import Optional
 from datetime import datetime
 import enum
-
-if TYPE_CHECKING:
-    from app.schemas.product import Product
 
 
 class ImageType(enum.Enum):
@@ -19,9 +16,9 @@ class ProductImageBase(BaseModel):
     image_type: ImageType = ImageType.OFFICIAL
 
 
-class ProductImageCreate(ProductImageBase):
-    pass
-
+class ProductImageCreate(BaseModel):
+    image_url: str = Field(..., max_length=255)
+    image_type: ImageType = ImageType.OFFICIAL
 
 class ProductImageUpdate(BaseModel):
     image_url: Optional[str] = Field(None, max_length=255)
