@@ -38,13 +38,9 @@ class ProductImage(ProductImageInDB):
 
 
 class ProductImageWithProduct(ProductImageInDB):
-    product: Optional["Product"] = None
+    # Remove product field to avoid circular import
+    # Product information can be fetched separately if needed
+    pass
 
     class Config:
-        from_attributes = True
-
-
-# Rebuild model to resolve forward references
-# Import Product for runtime use
-from app.schemas.product import Product
-ProductImageWithProduct.model_rebuild() 
+        from_attributes = True 
