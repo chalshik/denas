@@ -75,4 +75,31 @@ class TokenInfo(BaseModel):
     phone: Optional[str] = None
     phone_verified: Optional[bool] = False
     name: Optional[str] = None
-    picture: Optional[str] = None 
+    picture: Optional[str] = None
+
+
+# New schemas for cookie-based authentication
+class TokenData(BaseModel):
+    """Token data schema for setting cookies"""
+    id_token: str = Field(..., description="Firebase ID token")
+    refresh_token: str = Field(..., description="Firebase refresh token")
+
+
+class RefreshTokenRequest(BaseModel):
+    """Request schema for token refresh"""
+    refresh_token: str = Field(..., description="Firebase refresh token")
+
+
+class TokenResponse(BaseModel):
+    """Response schema for token operations"""
+    success: bool
+    message: str
+    expires_in: Optional[int] = None  # Token expiration time in seconds
+
+
+class SessionResponse(BaseModel):
+    """Session validation response"""
+    success: bool
+    user: Optional[User] = None
+    authenticated: bool = False
+    message: Optional[str] = None 

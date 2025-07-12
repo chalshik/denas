@@ -1,15 +1,184 @@
-# Denas Backend
+# Denas Backend API
 
-A modern FastAPI backend with PostgreSQL database and Alembic migrations, containerized with Docker.
+FastAPI backend with PostgreSQL, Firebase Authentication, and Cookie-based Sessions.
 
 ## Features
 
-- **FastAPI** - Modern, fast Python web framework
-- **PostgreSQL** - Robust relational database
-- **Alembic** - Database migrations
-- **Docker** - Containerized development environment
-- **SQLAlchemy** - Python SQL toolkit and ORM
-- **Pydantic** - Data validation using Python type hints
+- **Authentication**: Firebase Authentication with cookie-based sessions
+- **Database**: PostgreSQL with SQLAlchemy ORM
+- **API Documentation**: Auto-generated OpenAPI/Swagger docs
+- **Session Management**: Automatic token refresh with httpOnly cookies
+- **CORS**: Configurable CORS settings for development and production
+
+## Quick Start
+
+### 1. Environment Configuration
+
+Create environment files in the `env/` directory:
+
+#### Firebase Configuration (Required for Cookie Authentication)
+
+Add the following Firebase configuration to your environment file:
+
+```env
+# Firebase Configuration (Required for token refresh)
+FIREBASE_API_KEY=your_firebase_api_key
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_PRIVATE_KEY_ID=your_private_key_id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=your_service_account_email
+FIREBASE_CLIENT_ID=your_client_id
+FIREBASE_CLIENT_X509_CERT_URL=your_cert_url
+```
+
+**How to get Firebase API Key:**
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Click on Project Settings (gear icon)
+4. Go to "General" tab
+5. Under "Your apps" section, find "Web API Key"
+6. Copy the API key value
+
+#### Database Configuration
+
+```env
+# Database
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=denas_db
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+```
+
+### 2. Installation
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run migrations
+alembic upgrade head
+
+# Start the server
+uvicorn app.main:app --reload
+```
+
+### 3. API Documentation
+
+Once running, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+## Cookie-Based Authentication
+
+This backend now supports cookie-based authentication with automatic token refresh:
+
+### How it works:
+
+1. **Login**: User authenticates with Firebase on frontend
+2. **Session Setup**: Frontend calls `/auth/set-cookie` with Firebase tokens
+3. **Session Storage**: Backend stores tokens in httpOnly cookies
+4. **Auto Refresh**: Tokens are automatically refreshed every 30 minutes
+5. **Logout**: `/auth/logout` clears all authentication cookies
+
+### Key Endpoints:
+
+- `POST /auth/set-cookie` - Set authentication cookies
+- `POST /auth/refresh-token` - Refresh expired tokens
+- `GET /auth/session` - Check current session status
+- `POST /auth/logout` - Clear authentication cookies
+
+### Security Features:
+
+- **HttpOnly Cookies**: Prevents XSS attacks
+- **Secure Cookies**: HTTPS only in production
+- **SameSite**: CSRF protection
+- **Auto Token Refresh**: Seamless user experience
+
+## Environment Variables
+
+### Required
+
+```env
+FIREBASE_API_KEY=your_firebase_api_key
+FIREBASE_PROJECT_ID=your_project_id
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=denas_db
+```
+
+### Optional
+
+```env
+ENVIRONMENT=development|production
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+```
+
+## CORS Configuration
+
+The backend automatically configures CORS based on environment:
+
+- **Development**: Allows localhost:3000, localhost:3001
+- **Production**: Allows specified domains only
+
+Update `app/main.py` to add your production domains.
+
+## Health Check
+
+Check if the backend is running and properly configured:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Response includes:
+- Database connection status
+- Environment information
+- Firebase configuration status
+
+## Development
+
+### Running Tests
+
+```bash
+pytest
+```
+
+### Database Migrations
+
+```bash
+# Create new migration
+alembic revision --autogenerate -m "description"
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback
+alembic downgrade -1
+```
+
+## Troubleshooting
+
+### Firebase Configuration Issues
+
+1. **Missing API Key**: Ensure `FIREBASE_API_KEY` is set in your environment
+2. **Token Refresh Fails**: Check that the API key has proper permissions
+3. **CORS Issues**: Verify your frontend URL is in the allowed origins
+
+### Database Issues
+
+1. **Connection Refused**: Check if PostgreSQL is running
+2. **Migration Errors**: Ensure database exists and user has proper permissions
+
+## Production Deployment
+
+1. Set `ENVIRONMENT=production`
+2. Update CORS allowed origins in `app/main.py`
+3. Use secure values for all environment variables
+4. Enable HTTPS for secure cookies
 
 ## Project Structure
 
