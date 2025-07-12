@@ -30,4 +30,10 @@ async def root():
 
 @app.get("/health")
 async def health_check(db: Session = Depends(get_db)):
-    return {"status": "healthy", "database": "connected"} 
+    return {
+        "status": "healthy", 
+        "database": "connected",
+        "environment": settings.ENVIRONMENT,
+        "env_file": settings.current_env_file,
+        "database_host": settings.POSTGRES_HOST
+    } 
