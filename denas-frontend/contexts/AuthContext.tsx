@@ -76,11 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const backendUser = await ApiClient.getCurrentUser() as User;
           setUser(backendUser);
         } catch (err) {
-          console.error('Error getting user from backend:', err);
-          // User exists in Firebase but not in backend
-          // This shouldn't happen with the new flow, but handle it gracefully
+          // This is an expected state if the user has authenticated with Firebase
+          // but has not completed the backend registration process yet.
+          // We set the user to null and don't raise an error.
+          // The UI component responsible for auth should guide the user
+          // through the registration step.
           setUser(null);
-          setError('User not found in system. Please contact support.');
+          console.log('User not found in backend, registration may be required.');
         }
       } else {
         setUser(null);

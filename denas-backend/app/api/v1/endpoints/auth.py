@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import Optional, List
 
 from app.db.database import get_db
-from app.services.firebase import get_current_user_uid
+from app.services.firebase import FirebaseService
 from app.services.user_auth import UserService
 from app.api.dependencies import get_current_user, require_admin_access
 from app.schemas.auth import (
-    UserRegistrationRequest, 
+    UserRegistrationRequest,
+    UserLoginRequest,
+    TokenResponse,
     UserStatsResponse, 
     UserListResponse
 )
@@ -19,39 +22,77 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
     request: UserRegistrationRequest,
-    firebase_uid: str = Depends(get_current_user_uid),
     db: Session = Depends(get_db)
 ):
     """
-    Register a new user with Firebase UID and phone number
-    The Firebase token provides the UID, phone comes from request body
+    Register a new user with a phone number and password.
+    Creates a user in Firebase and the local database.
+    Returns a custom Firebase token for client-side login.
     """
+    # Check if user already exists in local DB
+    existing_user = await UserService.get_user_by_phone(db, request.phone)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this phone number already exists."
+        )
+
     try:
-        user = await UserService.create_user(
+        # 1. Create user in Firebase
+        firebase_uid = await FirebaseService.create_user_with_phone(request.phone)
+        
+        # 2. Create user in local database
+        await UserService.create_user(
             db=db,
             uid=firebase_uid,
-            phone=request.phone
+            phone=request.phone,
+            password=request.password
         )
         
-        logger.info(f"User registered successfully: {user.id} with UID: {firebase_uid}")
-        return user
+        # 3. Create a custom token for the new user
+        custom_token = await FirebaseService.create_custom_token(firebase_uid)
         
-    except Exception as e:
-        if "already exists" in str(e).lower() or "unique" in str(e).lower():
-            # User already exists, return existing user
-            existing_user = await UserService.get_user_by_uid(db, firebase_uid)
-            if existing_user:
-                logger.info(f"User already registered: {existing_user.id} with UID: {firebase_uid}")
-                return existing_user
-            
-        logger.error(f"Registration error: {str(e)}")
+        logger.info(f"User registered successfully with UID: {firebase_uid}")
+        return TokenResponse(firebase_token=custom_token)
+        
+    except IntegrityError:
+        db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Registration failed"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration failed due to a database conflict. This may be a race condition."
         )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Registration error: {str(e)}")
+        # Potentially delete the firebase user if DB registration fails
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during registration."
+        )
+
+@router.post("/login", response_model=TokenResponse)
+async def login_for_token(
+    request: UserLoginRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticate a user with phone and password.
+    Returns a custom Firebase token for client-side login.
+    """
+    user = await UserService.verify_user(db, phone=request.phone, password=request.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect phone number or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Create a custom token for the user
+    custom_token = await FirebaseService.create_custom_token(user.uid)
+    return TokenResponse(firebase_token=custom_token)
 
 
 @router.get("/me", response_model=User)
