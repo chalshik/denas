@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, EmailStr
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from app.schemas.user import User, UserRole, validate_phone
 
@@ -6,29 +6,12 @@ from app.schemas.user import User, UserRole, validate_phone
 class UserRegistrationRequest(BaseModel):
     """User registration request schema"""
     phone: str = Field(..., description="Phone number in international format")
-    password: str = Field(..., min_length=6, description="User password")
     
     @field_validator('phone')
     @classmethod
     def validate_phone_field(cls, v):
         return validate_phone(v)
 
-
-class UserLoginRequest(BaseModel):
-    """User login request schema"""
-    phone: str = Field(..., description="Phone number in international format")
-    password: str = Field(..., description="User password")
-
-    @field_validator('phone')
-    @classmethod
-    def validate_phone_field(cls, v):
-        return validate_phone(v)
-
-
-class TokenResponse(BaseModel):
-    """Schema for returning a token"""
-    firebase_token: str
-    
 
 class UserStatsResponse(BaseModel):
     """User statistics response schema"""

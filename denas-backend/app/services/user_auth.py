@@ -5,25 +5,12 @@ import logging
 from typing import Optional, List
 import datetime
 from sqlalchemy import func, and_
-import bcrypt
 
 logger = logging.getLogger(__name__)
 
 class UserService:
     """Service for handling user management operations"""
     
-    @staticmethod
-    def _hash_password(password: str) -> str:
-        """Hashes a password using bcrypt."""
-        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-    @staticmethod
-    def _verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Verifies a plain password against a hashed one."""
-        if not hashed_password:
-            return False
-        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-
     @staticmethod
     async def get_user_by_uid(db: Session, uid: str) -> Optional[User]:
         """Get user by Firebase UID"""
@@ -40,19 +27,10 @@ class UserService:
         return db.query(User).filter(User.id == user_id).first()
     
     @staticmethod
-    async def verify_user(db: Session, phone: str, password: str) -> Optional[User]:
-        """Verify user by phone and password."""
-        user = await UserService.get_user_by_phone(db, phone)
-        if not user or not UserService._verify_password(password, user.password_hash):
-            return None
-        return user
-
-    @staticmethod
     async def create_user(
         db: Session, 
         uid: str, 
         phone: str,
-        password: str,
         role: UserRole = UserRole.USER
     ) -> User:
         """
@@ -61,11 +39,9 @@ class UserService:
         Raises: IntegrityError if user already exists
         """
         try:
-            hashed_password = UserService._hash_password(password)
             user = User(
                 uid=uid,
                 phone=phone,
-                password_hash=hashed_password,
                 role=role
             )
             
@@ -103,8 +79,10 @@ class UserService:
                 logger.info(f"Existing user found: {user.id} with UID: {uid}")
                 return user
             else:
-                # This flow is deprecated in favor of explicit registration with password
-                raise Exception("User not found, please register.")
+                # User doesn't exist - create new user
+                user = await UserService.create_user(db, uid, phone)
+                logger.info(f"New user created: {user.id} with UID: {uid}")
+                return user
                     
         except Exception as e:
             logger.error(f"Error in get_or_create_user: {str(e)}")

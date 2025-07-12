@@ -66,10 +66,10 @@ export class ApiClient {
   // Helper to get phone from current Firebase user
   static getCurrentUserPhone(): string | null {
     const user = auth.currentUser;
-    if (!user) return null;
+    if (!user || !user.email) return null;
     
-    // The phone number is stored in the phoneNumber property
-    return user.phoneNumber;
+    // Convert email back to phone number
+    return user.email.replace('@phone.auth', '');
   }
 }
 
