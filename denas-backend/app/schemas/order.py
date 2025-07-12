@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -7,11 +7,9 @@ import enum
 
 class OrderStatus(enum.Enum):
     PENDING = "pending"
-    CONFIRMED = "confirmed"
-    PROCESSING = "processing"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
+    PAID = "paid"
     CANCELLED = "cancelled"
+    COMPLETED = "completed"
 
 
 class OrderBase(BaseModel):
@@ -33,6 +31,13 @@ class OrderUpdate(BaseModel):
 class OrderInDB(OrderBase):
     id: int
     created_at: datetime
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def validate_status_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
     class Config:
         from_attributes = True

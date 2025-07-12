@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 import enum
@@ -28,6 +28,13 @@ class ProductImageUpdate(BaseModel):
 class ProductImageInDB(ProductImageBase):
     id: int
     created_at: datetime
+
+    @field_validator('image_type', mode='before')
+    @classmethod
+    def validate_image_type_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
     class Config:
         from_attributes = True

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -9,8 +9,6 @@ class PaymentStatus(enum.Enum):
     PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
-    CANCELLED = "cancelled"
-    REFUNDED = "refunded"
 
 
 class PaymentBase(BaseModel):
@@ -33,6 +31,13 @@ class PaymentUpdate(BaseModel):
 class PaymentInDB(PaymentBase):
     id: int
     created_at: datetime
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def validate_status_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
     class Config:
         from_attributes = True

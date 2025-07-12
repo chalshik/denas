@@ -63,6 +63,13 @@ class User(UserBase):
     id: int
     created_at: datetime
 
+    @field_validator('role', mode='before')
+    @classmethod
+    def validate_role_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
+
     class Config:
         from_attributes = True
 

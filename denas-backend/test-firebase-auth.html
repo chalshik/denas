@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Auth - Get Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="email"], input[type="password"], input[type="tel"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .logout-btn {
+            background-color: #f44336;
+        }
+        .logout-btn:hover {
+            background-color: #da190b;
+        }
+        .token-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .token-display {
+            background-color: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #4CAF50;
+        }
+        .copy-btn {
+            background-color: #2196F3;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+        .copy-btn:hover {
+            background-color: #1976D2;
+        }
+        .user-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border: 1px solid #2196F3;
+        }
+        .error {
+            color: #f44336;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 5px;
+        }
+        .success {
+            color: #4CAF50;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e8f5e8;
+            border-radius: 5px;
+        }
+        .hidden {
+            display: none;
+        }
+        .test-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff3e0;
+            border-radius: 5px;
+            border: 1px solid #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Auth - Get Token</h1>
+        
+        <!-- Login/Register Form -->
+        <div id="authForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Phone (for backend registration):</label>
+                <input type="tel" id="phone" placeholder="+1234567890" required>
+            </div>
+            
+            <button onclick="loginUser()">Login</button>
+            <button onclick="registerUser()">Register</button>
+            
+            <div id="authError" class="error hidden"></div>
+            <div id="authSuccess" class="success hidden"></div>
+        </div>
+        
+        <!-- User Info Section -->
+        <div id="userSection" class="hidden">
+            <div class="user-info">
+                <h3>👤 User Information</h3>
+                <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                <p><strong>UID:</strong> <span id="userUID"></span></p>
+                <p><strong>Email Verified:</strong> <span id="emailVerified"></span></p>
+            </div>
+            
+            <button class="logout-btn" onclick="logoutUser()">Logout</button>
+            <button onclick="refreshToken()">Refresh Token</button>
+        </div>
+        
+        <!-- Token Section -->
+        <div id="tokenSection" class="token-section hidden">
+            <h3>🔑 Firebase ID Token</h3>
+            <p>Use this token for API authentication:</p>
+            <div id="tokenDisplay" class="token-display"></div>
+            <button class="copy-btn" onclick="copyToken()">Copy Token</button>
+            <button class="copy-btn" onclick="copyAuthHeader()">Copy Auth Header</button>
+        </div>
+        
+        <!-- Test Backend Section -->
+        <div id="testSection" class="test-section hidden">
+            <h3>🧪 Test Backend API</h3>
+            <button onclick="testHealthCheck()">Test Health Check</button>
+            <button onclick="testRegisterBackend()">Register in Backend</button>
+            <button onclick="testFileUpload()">Test File Upload</button>
+            <div id="testResults" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeP6RHZ-JPXooQ7snieCGPpwLTydI-khU",
+            authDomain: "denas-20261.firebaseapp.com",
+            projectId: "denas-20261",
+            storageBucket: "denas-20261.firebasestorage.app",
+            messagingSenderId: "820538628427",
+            appId: "1:820538628427:web:418b6fa8838fa9fc8130ce",
+            measurementId: "G-EPV0P7LR5J"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        let currentToken = null;
+
+        // Auth state listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                showUserInfo(user);
+                getAndDisplayToken(user);
+            } else {
+                hideUserInfo();
+            }
+        });
+
+        // Make functions global
+        window.registerUser = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showError('Please enter both email and password');
+                return;
+            }
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                showSuccess('User registered successfully!');
+                console.log('User registered:', userCredential.user);
+            } catch (error) {
+                showError('Registration failed: ' + error.message);
+                console.error('Registration error:', error);
+            }
+        };
+
+        window.loginUser = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showError('Please enter both email and password');
+                return;
+            }
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                showSuccess('Login successful!');
+                console.log('User logged in:', userCredential.user);
+            } catch (error) {
+                showError('Login failed: ' + error.message);
+                console.error('Login error:', error);
+            }
+        };
+
+        window.logoutUser = async function() {
+            try {
+                await signOut(auth);
+                showSuccess('Logged out successfully!');
+            } catch (error) {
+                showError('Logout failed: ' + error.message);
+            }
+        };
+
+        window.refreshToken = async function() {
+            if (auth.currentUser) {
+                await getAndDisplayToken(auth.currentUser);
+                showSuccess('Token refreshed!');
+            }
+        };
+
+        window.copyToken = function() {
+            if (currentToken) {
+                navigator.clipboard.writeText(currentToken);
+                showSuccess('Token copied to clipboard!');
+            }
+        };
+
+        window.copyAuthHeader = function() {
+            if (currentToken) {
+                const authHeader = `Authorization: Bearer ${currentToken}`;
+                navigator.clipboard.writeText(authHeader);
+                showSuccess('Authorization header copied to clipboard!');
+            }
+        };
+
+        // Backend testing functions
+        window.testHealthCheck = async function() {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                showTestResult('Health Check', response.status, data);
+            } catch (error) {
+                showTestResult('Health Check', 'ERROR', { error: error.message });
+            }
+        };
+
+        window.testRegisterBackend = async function() {
+            if (!currentToken) {
+                showTestResult('Backend Register', 'ERROR', { error: 'No token available' });
+                return;
+            }
+            
+            const phone = document.getElementById('phone').value;
+            if (!phone) {
+                showTestResult('Backend Register', 'ERROR', { error: 'Please enter a phone number' });
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ phone: phone })
+                });
+                const data = await response.json();
+                showTestResult('Backend Register', response.status, data);
+            } catch (error) {
+                showTestResult('Backend Register', 'ERROR', { error: error.message });
+            }
+        };
+
+        window.testFileUpload = function() {
+            if (!currentToken) {
+                showTestResult('File Upload', 'ERROR', { error: 'No token available' });
+                return;
+            }
+            
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('folder', 'test-uploads');
+                
+                try {
+                    const response = await fetch('http://localhost:8000/api/v1/uploads/single', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${currentToken}`
+                        },
+                        body: formData
+                    });
+                    const data = await response.json();
+                    showTestResult('File Upload', response.status, data);
+                } catch (error) {
+                    showTestResult('File Upload', 'ERROR', { error: error.message });
+                }
+            };
+            input.click();
+        };
+
+        // Helper functions
+        function showUserInfo(user) {
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userUID').textContent = user.uid;
+            document.getElementById('emailVerified').textContent = user.emailVerified ? 'Yes' : 'No';
+            
+            document.getElementById('authForm').classList.add('hidden');
+            document.getElementById('userSection').classList.remove('hidden');
+            document.getElementById('tokenSection').classList.remove('hidden');
+            document.getElementById('testSection').classList.remove('hidden');
+        }
+
+        function hideUserInfo() {
+            document.getElementById('authForm').classList.remove('hidden');
+            document.getElementById('userSection').classList.add('hidden');
+            document.getElementById('tokenSection').classList.add('hidden');
+            document.getElementById('testSection').classList.add('hidden');
+            currentToken = null;
+        }
+
+        async function getAndDisplayToken(user) {
+            try {
+                const token = await user.getIdToken();
+                currentToken = token;
+                document.getElementById('tokenDisplay').textContent = token;
+                console.log('Firebase ID Token:', token);
+            } catch (error) {
+                showError('Failed to get token: ' + error.message);
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('authSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
+            setTimeout(() => successDiv.classList.add('hidden'), 3000);
+        }
+
+        function showTestResult(testName, status, data) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultHtml = `
+                <div style="margin-bottom: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                    <strong>${testName}</strong> - Status: ${status}
+                    <pre style="margin-top: 5px; font-size: 12px; background: white; padding: 10px; border-radius: 3px;">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+        }
+    </script>
+</body>
+</html> 

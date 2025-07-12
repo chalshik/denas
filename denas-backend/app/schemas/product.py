@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -49,6 +49,13 @@ class ProductUpdate(BaseModel):
 class ProductInDB(ProductBase):
     id: int
     created_at: datetime
+
+    @field_validator('availability_type', mode='before')
+    @classmethod
+    def validate_availability_type_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
     class Config:
         from_attributes = True
@@ -117,6 +124,13 @@ class ProductCatalog(BaseModel):
     primary_image: Optional[ProductImageCatalog] = None
     favorites_count: Optional[int] = 0
 
+    @field_validator('availability_type', mode='before')
+    @classmethod
+    def validate_availability_type_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
+
     class Config:
         from_attributes = True
 
@@ -143,6 +157,13 @@ class ProductResponseSpecific(BaseModel):
     images: List[ProductImageResponse] = []
     favorites_count: Optional[int] = 0
 
+    @field_validator('availability_type', mode='before')
+    @classmethod
+    def validate_availability_type_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
+
     class Config:
         from_attributes = True
 
@@ -164,6 +185,13 @@ class ProductResponse(BaseModel):
     category: Optional[CategoryResponse] = None
     images: List[ProductImageResponse] = []
     favorites_count: Optional[int] = 0
+
+    @field_validator('availability_type', mode='before')
+    @classmethod
+    def validate_availability_type_field(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
     class Config:
         from_attributes = True
