@@ -13,12 +13,29 @@ app = FastAPI(
 )
 
 # Set up CORS
+# Configure allowed origins based on environment
+if settings.is_production:
+    # Production: specify exact origins
+    allowed_origins = [
+        "https://your-frontend-domain.com",  # Replace with your actual frontend domain
+        "https://www.your-frontend-domain.com",  # Replace with your actual frontend domain
+    ]
+else:
+    # Development: allow localhost and common dev ports
+    allowed_origins = [
+        "http://localhost:3000",  # Next.js default dev port
+        "http://localhost:3001",  # Alternative dev port
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure this properly for production
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=True,  # Required for cookies
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include API router
@@ -35,5 +52,6 @@ async def health_check(db: Session = Depends(get_db)):
         "database": "connected",
         "environment": settings.ENVIRONMENT,
         "env_file": settings.current_env_file,
-        "database_host": settings.POSTGRES_HOST
+        "database_host": settings.POSTGRES_HOST,
+        "firebase_configured": settings.has_firebase_config
     } 

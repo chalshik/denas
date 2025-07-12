@@ -198,10 +198,14 @@ async def delete_user(
     Delete user (Admin only)
     """
     try:
-        await UserService.delete_user(db, user_id)
+        deleted_user = await UserService.delete_user(db=db, user_id=user_id)
         
         logger.info(f"User deleted by admin {admin_user.id}: user {user_id}")
-        return {"success": True, "message": "User deleted successfully"}
+        return {
+            "success": True,
+            "message": f"User {user_id} deleted successfully",
+            "deleted_user": deleted_user
+        }
         
     except ValueError as e:
         raise HTTPException(
@@ -223,9 +227,17 @@ async def search_users(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_admin_access)
 ):
-    """Search users by phone or UID (admin only)"""
+    """
+    Search users by phone number or other criteria (Admin only)
+    """
     try:
-        users = await UserService.search_users(db, q, limit)
+        users = await UserService.search_users(
+            db=db,
+            search_term=q,
+            limit=limit
+        )
+        
+        logger.info(f"User search performed by admin {admin_user.id}: '{q}' -> {len(users)} results")
         return users
         
     except Exception as e:
@@ -233,4 +245,237 @@ async def search_users(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to search users"
+        )
+
+
+# New cookie-based authentication endpoints
+from fastapi import Response, Request
+from app.schemas.auth import TokenData, RefreshTokenRequest, TokenResponse, SessionResponse
+import requests
+import json
+import os
+
+@router.post("/set-cookie", response_model=TokenResponse)
+async def set_authentication_cookies(
+    response: Response,
+    token_data: TokenData,
+    db: Session = Depends(get_db)
+):
+    """
+    Set authentication cookies after successful login
+    """
+    try:
+        # Validate the ID token first
+        from app.services.firebase import FirebaseService
+        firebase_service = FirebaseService()
+        
+        # Verify the token and get user info
+        firebase_uid = await firebase_service.verify_token_direct(token_data.id_token)
+        
+        # Set httpOnly cookies
+        response.set_cookie(
+            key="id_token",
+            value=token_data.id_token,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            max_age=3600  # 1 hour
+        )
+        
+        response.set_cookie(
+            key="refresh_token",
+            value=token_data.refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            max_age=2592000  # 30 days
+        )
+        
+        logger.info(f"Authentication cookies set for user: {firebase_uid}")
+        
+        return TokenResponse(
+            success=True,
+            message="Authentication cookies set successfully",
+            expires_in=3600
+        )
+        
+    except Exception as e:
+        logger.error(f"Set cookie error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to set authentication cookies"
+        )
+
+
+@router.post("/refresh-token", response_model=TokenResponse)
+async def refresh_authentication_token(
+    request: Request,
+    response: Response
+):
+    """
+    Refresh the authentication token using refresh token from cookies
+    """
+    try:
+        # Get refresh token from cookies
+        refresh_token = request.cookies.get("refresh_token")
+        
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No refresh token found"
+            )
+        
+        # Make request to Firebase to refresh token
+        from app.core.config import settings
+        
+        if not settings.FIREBASE_API_KEY:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Firebase configuration error"
+            )
+        
+        refresh_url = f"https://securetoken.googleapis.com/v1/token?key={settings.FIREBASE_API_KEY}"
+        
+        refresh_payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token
+        }
+        
+        refresh_response = requests.post(
+            refresh_url,
+            data=refresh_payload,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        if refresh_response.status_code != 200:
+            logger.error(f"Token refresh failed: {refresh_response.text}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token refresh failed"
+            )
+        
+        refresh_data = refresh_response.json()
+        new_id_token = refresh_data.get("id_token")
+        new_refresh_token = refresh_data.get("refresh_token")
+        expires_in = int(refresh_data.get("expires_in", 3600))
+        
+        # Update cookies with new tokens
+        response.set_cookie(
+            key="id_token",
+            value=new_id_token,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            max_age=expires_in
+        )
+        
+        if new_refresh_token:
+            response.set_cookie(
+                key="refresh_token",
+                value=new_refresh_token,
+                httponly=True,
+                secure=True,
+                samesite="strict",
+                max_age=2592000  # 30 days
+            )
+        
+        logger.info("Token refreshed successfully")
+        
+        return TokenResponse(
+            success=True,
+            message="Token refreshed successfully",
+            expires_in=expires_in
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Token refresh error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to refresh token"
+        )
+
+
+@router.post("/logout", response_model=TokenResponse)
+async def logout_user(response: Response):
+    """
+    Logout user by clearing authentication cookies
+    """
+    try:
+        # Clear cookies
+        response.delete_cookie(key="id_token")
+        response.delete_cookie(key="refresh_token")
+        
+        logger.info("User logged out - cookies cleared")
+        
+        return TokenResponse(
+            success=True,
+            message="Logged out successfully"
+        )
+        
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to logout"
+        )
+
+
+@router.get("/session", response_model=SessionResponse)
+async def check_session(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Check if user has a valid session
+    """
+    try:
+        # Get ID token from cookies
+        id_token = request.cookies.get("id_token")
+        
+        if not id_token:
+            return SessionResponse(
+                success=True,
+                authenticated=False,
+                message="No session found"
+            )
+        
+        # Verify the token
+        from app.services.firebase import FirebaseService
+        firebase_service = FirebaseService()
+        
+        try:
+            firebase_uid = await firebase_service.verify_token_direct(id_token)
+            
+            # Get user from database
+            user = await UserService.get_user_by_uid(db, firebase_uid)
+            
+            if user:
+                return SessionResponse(
+                    success=True,
+                    authenticated=True,
+                    user=user,
+                    message="Session valid"
+                )
+            else:
+                return SessionResponse(
+                    success=True,
+                    authenticated=False,
+                    message="User not found in database"
+                )
+                
+        except Exception as token_error:
+            logger.error(f"Token validation error: {str(token_error)}")
+            return SessionResponse(
+                success=True,
+                authenticated=False,
+                message="Invalid session"
+            )
+        
+    except Exception as e:
+        logger.error(f"Session check error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check session"
         ) 
