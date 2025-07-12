@@ -15,6 +15,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     uid = Column(String(100), unique=True, nullable=False, index=True)
     phone = Column(String(20), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=True)  # Storing hashed passwords
     role = Column(Enum(UserRole), default=UserRole.USER, nullable=False)
     created_at = Column(TIMESTAMP, default=func.now())
     

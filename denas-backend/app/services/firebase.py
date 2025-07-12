@@ -76,13 +76,39 @@ initialize_firebase()
 security = HTTPBearer()
 
 class FirebaseService:
-    """Firebase Authentication Service - focused only on token validation"""
+    """Service for interacting with Firebase Authentication"""
     
     @staticmethod
-    async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    async def create_user_with_phone(phone_number: str) -> str:
         """
-        Verify Firebase JWT token and return user UID
-        Returns: firebase_uid
+        Creates a new user in Firebase Authentication using their phone number.
+        Returns the new user's UID.
+        """
+        try:
+            user_record = auth.create_user(phone_number=phone_number)
+            logger.info(f"Successfully created new Firebase user: {user_record.uid} for phone: {phone_number}")
+            return user_record.uid
+        except Exception as e:
+            logger.error(f"Error creating Firebase user for phone {phone_number}: {e}")
+            raise
+
+    @staticmethod
+    async def create_custom_token(uid: str) -> str:
+        """
+        Creates a custom Firebase token for the given UID.
+        """
+        try:
+            custom_token = auth.create_custom_token(uid)
+            return custom_token
+        except Exception as e:
+            logger.error(f"Error creating custom token for UID {uid}: {e}")
+            raise
+
+    @staticmethod
+    async def get_uid_from_token(credentials: HTTPAuthorizationCredentials) -> str:
+        """
+        Verifies a Firebase ID token and returns the user's UID.
+        This is a helper and not a dependency.
         """
         try:
             token = credentials.credentials
@@ -135,23 +161,28 @@ class FirebaseService:
             return None
         
         try:
-            return await FirebaseService.verify_token(credentials)
+            return await FirebaseService.get_uid_from_token(credentials)
         except HTTPException:
             return None
 
 # Authentication Dependencies
-async def get_current_user_uid(firebase_uid: str = Depends(FirebaseService.verify_token)) -> str:
+async def get_current_user_uid(
+    creds: HTTPAuthorizationCredentials = Depends(security)
+) -> str:
     """
-    Get current user's Firebase UID from verified token
-    Returns: firebase_uid
+    Dependency to get current user's Firebase UID from a verified token.
     """
-    return firebase_uid
+    return await FirebaseService.get_uid_from_token(creds)
 
 async def get_current_user_uid_optional(
-    firebase_uid: Optional[str] = Depends(FirebaseService.verify_token_optional)
+    creds: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))
 ) -> Optional[str]:
     """
-    Optional authentication - returns None if no token provided or invalid
-    Returns: firebase_uid or None
+    Optional authentication dependency. Returns UID or None.
     """
-    return firebase_uid
+    if not creds:
+        return None
+    try:
+        return await FirebaseService.get_uid_from_token(creds)
+    except HTTPException:
+        return None
