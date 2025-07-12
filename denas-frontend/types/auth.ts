@@ -48,4 +48,5 @@ export interface RolePermissions {
   canViewStats: boolean;
   canUpdateRoles: boolean;
   canDeleteUsers: boolean;
+  canManageProducts: boolean;
 } 
