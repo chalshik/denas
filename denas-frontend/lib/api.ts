@@ -71,6 +71,19 @@ export class ApiClient {
     // Convert email back to phone number
     return user.email.replace('@phone.auth', '');
   }
+
+  // Helper to get Firebase token
+  static async getToken(): Promise<string | null> {
+    try {
+      const user = auth.currentUser;
+      if (!user) return null;
+      
+      return await user.getIdToken();
+    } catch (error) {
+      console.error('Error getting token:', error);
+      return null;
+    }
+  }
 }
 
 export default ApiClient; 

@@ -4,23 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { ApiClient } from '@/lib/api';
-
-interface User {
-  id: number;
-  uid: string;
-  phone: string;
-  role: string;
-  created_at: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  firebaseUser: FirebaseUser | null;
-  loading: boolean;
-  error: string | null;
-  signOut: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-}
+import { User, AuthContextType } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
