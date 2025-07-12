@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { ApiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardBody, CardHeader, Input, Button, Spinner, Link } from '@heroui/react';
 
 interface PhoneAuthProps {
   onSuccess?: () => void;
@@ -86,63 +87,70 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900 text-center">
+    <Card className="max-w-md mx-auto shadow-lg">
+      <CardHeader className="pb-0 pt-6 px-6">
+        <h2 className="text-xl font-bold text-center w-full text-gray-800">
           {isSignUp ? 'Sign Up' : 'Sign In'}
         </h2>
-      </div>
+      </CardHeader>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone Number
-          </label>
-          <input
-            id="phone"
+      <CardBody className="px-6 pb-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Input
             type="tel"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+            label="Phone Number"
             placeholder="Enter your phone number"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder:text-gray-500"
-            required
+            value={phoneNumber}
+            onValueChange={setPhoneNumber}
+            isRequired
+            variant="bordered"
+            color="primary"
+            classNames={{
+              label: "text-gray-700 font-medium",
+              input: "text-gray-900",
+              inputWrapper: "border-gray-300 hover:border-blue-500 focus-within:border-blue-500"
+            }}
           />
-        </div>
-        
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
-          <input
-            id="password"
+          
+          <Input
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            label="Password"
             placeholder="Enter your password"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder:text-gray-500"
-            required
+            value={password}
+            onValueChange={setPassword}
+            isRequired
             minLength={6}
+            variant="bordered"
+            color="primary"
+            classNames={{
+              label: "text-gray-700 font-medium",
+              input: "text-gray-900",
+              inputWrapper: "border-gray-300 hover:border-blue-500 focus-within:border-blue-500"
+            }}
           />
-        </div>
+          
+          <Button
+            type="submit"
+            color="primary"
+            isLoading={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3"
+            spinner={<Spinner color="white" size="sm" />}
+          >
+            {isSignUp ? 'Sign Up' : 'Sign In'}
+          </Button>
+        </form>
         
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
-        </button>
-      </form>
-      
-      <div className="mt-4 text-center">
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="text-blue-600 hover:text-blue-800 underline"
-        >
-          {isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up'}
-        </button>
-      </div>
-    </div>
+        <div className="mt-6 text-center">
+          <Link
+            href="#"
+            onPress={() => setIsSignUp(!isSignUp)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up'}
+          </Link>
+        </div>
+      </CardBody>
+    </Card>
   );
 };
 
