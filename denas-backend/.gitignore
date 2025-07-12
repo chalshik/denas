@@ -110,6 +110,13 @@ ENV/
 env.bak/
 venv.bak/
 
+# Environment files with sensitive data
+# Keep template files but ignore files with real credentials
+env/.env.supabase
+env/.env.production
+# Allow local development file to be committed (no sensitive data)
+!env/.env.local
+
 # Spyder project settings
 .spyderproject
 .spyproject
