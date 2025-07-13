@@ -72,14 +72,12 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     try {
       // For password login, we'll use email format with phone number
       const email = `${phoneNumber}@phone.com`;
-      await signInWithEmailAndPassword(auth, email, password);
-      
-      // Check if user is admin (this should come from your backend)
-      // For demo purposes, we'll check if phone number contains 'admin'
-      const isAdmin = phoneNumber.includes('admin') || phoneNumber === '+1234567890';
-      localStorage.setItem('userRole', isAdmin ? 'admin' : 'user');
-      
-      if (isAdmin) {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      // Получить профиль пользователя с ролью с бэка
+      const backendUser = await import('@/lib/auth').then(m => m.fetchUserProfile(idToken));
+      localStorage.setItem('userRole', backendUser.role?.toLowerCase?.() || 'user');
+      if (backendUser.role === 'Admin') {
         router.push('/admin/products');
       } else {
         router.push('/');
@@ -102,17 +100,17 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center min-h-[60vh]">
       <Form
-        className="w-full space-y-4"
+        className="w-full space-y-6"
         onSubmit={onSubmit}
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Input
-            isRequired
             label="Phone Number"
             labelPlacement="outside"
-            placeholder="+1234567890"
+            classNames={{ label: 'mb-2' }}
+            placeholder="Enter your phone"
             value={phoneNumber}
             onValueChange={setPhoneNumber}
             isInvalid={!!error && !showVerification}
@@ -121,8 +119,9 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
 
           {!showVerification && (
             <Input
-              label="Password (optional)"
+              label="Password"
               labelPlacement="outside"
+              classNames={{ label: 'mb-2' }}
               placeholder="Enter your password"
               type="password"
               value={password}

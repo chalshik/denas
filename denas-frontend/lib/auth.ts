@@ -45,3 +45,31 @@ export const getCurrentUser = (): User | null => {
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
 };
+
+// Backend API base URL
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+// Register user in backend
+export async function registerUserBackend(idToken: string, phone: string) {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ phone }),
+  });
+  if (!res.ok) throw new Error('Failed to register user in backend');
+  return await res.json();
+}
+
+// Get current user profile (with role) from backend
+export async function fetchUserProfile(idToken: string) {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+    },
+  });
+  if (!res.ok) throw new Error('Failed to fetch user profile');
+  return await res.json();
+}

@@ -116,14 +116,13 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     try {
       // For password registration, we'll use email format with phone number
       const email = `${phoneNumber}@phone.com`;
-      await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Check if user is admin (this should come from your backend)
-      // For demo purposes, we'll check if phone number contains 'admin'
-      const isAdmin = phoneNumber.includes('admin') || phoneNumber === '+1234567890';
-      localStorage.setItem('userRole', isAdmin ? 'admin' : 'user');
-      
-      if (isAdmin) {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      // Зарегистрировать пользователя на бэке
+      const backendUser = await import('@/lib/auth').then(m => m.registerUserBackend(idToken, phoneNumber));
+      // Сохраняем роль (например, в localStorage или context)
+      localStorage.setItem('userRole', backendUser.role?.toLowerCase?.() || 'user');
+      if (backendUser.role === 'Admin') {
         router.push('/admin/products');
       } else {
         router.push('/');
@@ -146,17 +145,17 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center min-h-[60vh]">
       <Form
-        className="w-full space-y-4"
+        className="w-full space-y-6"
         onSubmit={onSubmit}
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           <Input
-            isRequired
             label="Phone Number"
             labelPlacement="outside"
-            placeholder="+1234567890"
+            classNames={{ label: 'mb-2' }}
+            placeholder="Enter your phone"
             value={phoneNumber}
             onValueChange={setPhoneNumber}
             isInvalid={!!error && !showVerification}
@@ -166,21 +165,21 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           {!showVerification && (
             <>
               <Input
-                isRequired
                 label="Password"
                 labelPlacement="outside"
+                classNames={{ label: 'mb-2' }}
                 placeholder="Enter your password"
                 type="password"
                 value={password}
                 onValueChange={setPassword}
-                isInvalid={!!getPasswordError(password)}
-                errorMessage={getPasswordError(password)}
+                isInvalid={!!getPasswordError(password) && password.length > 0}
+                errorMessage={password.length > 0 ? getPasswordError(password) : undefined}
               />
 
               <Input
-                isRequired
                 label="Confirm Password"
                 labelPlacement="outside"
+                classNames={{ label: 'mb-2' }}
                 placeholder="Confirm your password"
                 type="password"
                 value={confirmPassword}
