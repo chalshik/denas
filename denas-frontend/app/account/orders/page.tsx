@@ -4,6 +4,7 @@ import React from 'react';
 import { useAuth } from '@/app/hooks/useAuth';
 import { Button } from '@heroui/button';
 import { Card, CardBody, CardHeader } from '@heroui/card';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 // Mock orders data
 const mockOrders = [
@@ -31,6 +32,14 @@ const mockOrders = [
 ];
 
 export default function OrdersPage() {
+  return (
+    <ProtectedRoute>
+      <OrdersContent />
+    </ProtectedRoute>
+  );
+}
+
+function OrdersContent() {
   const { user, loading, isAuthenticated } = useAuth();
 
   if (loading) {

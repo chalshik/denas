@@ -4,12 +4,14 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
-import { useProtectedRoute } from '@/app/hooks/useAuth';
+import { useAuth } from '@/app/hooks/useAuth';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { 
   ShoppingBagIcon, 
   ChatBubbleLeftRightIcon, 
   ChartBarIcon, 
-  Cog6ToothIcon 
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 
 interface AdminLayoutProps {
@@ -17,19 +19,16 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, loading, canAccess, logout } = useProtectedRoute(true);
+  return (
+    <ProtectedRoute requireAdmin>
+      <AdminSidebarLayout>{children}</AdminSidebarLayout>
+    </ProtectedRoute>
+  );
+}
+
+function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
+  const { user, logout } = useAuth();
   const router = useRouter();
-
-  React.useEffect(() => {
-    if (!loading && !canAccess) {
-      if (!user) {
-        router.push('/auth/login');
-      } else {
-        router.push('/');
-      }
-    }
-  }, [loading, canAccess, user, router]);
-
   const menuItems = [
     {
       name: 'Products',
@@ -52,31 +51,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: Cog6ToothIcon,
     },
   ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-lg">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || !canAccess) {
-    return null;
-  }
-
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
-          <p className="text-sm text-gray-600 mt-1">Welcome, {user.email}</p>
+          <p className="text-sm text-gray-600 mt-1">Welcome, {user?.email}</p>
         </div>
-        
         <nav className="mt-6">
           <div className="px-4 space-y-2">
             {menuItems.map((item) => {
@@ -94,22 +76,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             })}
           </div>
         </nav>
-
-        <div className="absolute bottom-4 left-4 right-4">
+        <div className="absolute bottom-4 left-4">
           <Button
             color="danger"
-            variant="bordered"
-            className="w-full"
+            isIconOnly
+            radius="full"
+            size="sm"
+            className="shadow-md"
+            title="Sign Out"
             onPress={async () => {
               await logout();
               router.push('/');
             }}
           >
-            Sign Out
+            <ArrowRightOnRectangleIcon className="w-5 h-5" />
           </Button>
         </div>
       </div>
-
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="p-8">
