@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/table';
-import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
+import { Card, CardBody } from '@heroui/card';
+import { Select, SelectItem } from '@heroui/select';
+import { Switch } from '@heroui/switch';
+import { Form } from '@heroui/form';
 import { useModal } from '@/app/hooks/useModal';
 import { useForm } from '@/app/hooks/useForm';
 import { useFetch } from '@/app/hooks/useFetch';
@@ -107,67 +109,62 @@ export default function AdminProductsPage() {
         </Button>
       </div>
 
-      <Transition appear show={modal.isOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={modal.close}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
-            leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
+      {/* Modal через Hero UI Card + Tailwind overlay */}
+      {modal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25">
+          <Card className="w-full max-w-lg p-6">
+            <Form onSubmit={handleSubmit} className="space-y-4">
+              <h2 className="text-xl font-bold mb-2">Add New Product</h2>
+              <Input label="Name" name="name" value={form.name} onChange={handleInput} required />
+              <Input label="Description" name="description" value={form.description} onChange={handleInput} required />
+              <Input label="Price" name="price" type="number" value={String(form.price)} onChange={handleInput} required min={0.01} step={0.01} />
+              <Input label="Stock Quantity" name="stock_quantity" type="number" value={String(form.stock_quantity)} onChange={handleInput} required min={0} />
+              <Select
+                label="Availability Type"
+                selectedKeys={[form.availability_type]}
+                onSelectionChange={keys => handleInput({ target: { name: 'availability_type', value: Array.from(keys)[0] } } as any)}
               >
-                <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <Dialog.Title as="h2" className="text-xl font-bold mb-2">Add New Product</Dialog.Title>
-                    <Input label="Name" name="name" value={form.name} onChange={handleInput} required />
-                    <Input label="Description" name="description" value={form.description} onChange={handleInput} required />
-                    <Input label="Price" name="price" type="number" value={String(form.price)} onChange={handleInput} required min={0.01} step={0.01} />
-                    <Input label="Stock Quantity" name="stock_quantity" type="number" value={String(form.stock_quantity)} onChange={handleInput} required min={0} />
-                    <label className="block">Availability Type
-                      <select name="availability_type" value={form.availability_type} onChange={handleInput} className="block w-full mt-1 border rounded px-2 py-1">
-                        {availabilityOptions.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <Input label="Preorder Available Date" name="preorder_available_date" type="datetime-local" value={form.preorder_available_date} onChange={handleInput} />
-                    <label className="block">Category
-                      <select name="category_id" value={form.category_id} onChange={handleInput} className="block w-full mt-1 border rounded px-2 py-1" required>
-                        <option value="">Select category</option>
-                        {(categories || []).map(cat => <option key={cat.id} value={String(cat.id)}>{cat.name}</option>)}
-                      </select>
-                    </label>
-                    <label className="block">Images
-                      <input type="file" name="images" multiple accept="image/*" onChange={handleImageChange} className="block mt-1" />
-                      {imagePreviews.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {imagePreviews.map((src, i) => (
-                            <img key={i} src={src} alt={`preview-${i}`} className="w-20 h-20 object-cover rounded border" />
-                          ))}
-                        </div>
-                      )}
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" name="is_active" checked={form.is_active} onChange={handleInput} /> Active
-                    </label>
-                    <Button type="submit" color="primary" isLoading={loading}>
-                      Create Product
-                    </Button>
-                  </form>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+                <>
+                  {availabilityOptions.map(opt => (
+                    <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </>
+              </Select>
+              <Input label="Preorder Available Date" name="preorder_available_date" type="datetime-local" value={form.preorder_available_date} onChange={handleInput} />
+              <Select
+                label="Category"
+                selectedKeys={[form.category_id]}
+                onSelectionChange={keys => handleInput({ target: { name: 'category_id', value: Array.from(keys)[0] } } as any)}
+                required
+              >
+                <>
+                  <SelectItem key="">Select category</SelectItem>
+                  {(categories || []).map(cat => <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>)}
+                </>
+              </Select>
+              <Input label="Images" name="images" type="file" multiple accept="image/*" onChange={handleImageChange} />
+              {imagePreviews.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {imagePreviews.map((src, i) => (
+                    <img key={i} src={src} alt={`preview-${i}`} className="w-20 h-20 object-cover rounded border" />
+                  ))}
+                </div>
+              )}
+              <Switch isSelected={form.is_active} onValueChange={val => handleInput({ target: { name: 'is_active', type: 'checkbox', checked: val } } as any)}>
+                Active
+              </Switch>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="light" onPress={modal.close}>
+                  Cancel
+                </Button>
+                <Button type="submit" color="primary" isLoading={loading}>
+                  Create Product
+                </Button>
+              </div>
+            </Form>
+          </Card>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b">
