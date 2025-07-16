@@ -9,7 +9,7 @@ export function useProducts() {
     apiHook.setLoading(true);
     try {
       const products = await api.get<Product[]>("/products");
-      apiHook.setItems(products);
+      apiHook.setData(products);
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to fetch products");
     } finally {
@@ -73,7 +73,7 @@ export function useProducts() {
 
   return {
     ...apiHook,
-    products: apiHook.items || [],
+    products: apiHook.data || [],
     fetchProducts,
     createProduct,
     updateProduct,
