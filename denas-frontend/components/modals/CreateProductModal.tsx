@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
-import { Card, CardBody } from '@heroui/card';
+import { Card } from '@heroui/card';
 import { Select, SelectItem } from '@heroui/select';
 import { Switch } from '@heroui/switch';
 import { Form } from '@heroui/form';
@@ -28,7 +28,7 @@ export default function CreateProductModal({
     description: '',
     price: 1,
     stock_quantity: 0,
-    availability_type: 'in_stock',
+    availability_type: 'IN_STOCK',
     preorder_day: '',
     preorder_month: '',
     preorder_year: '',
@@ -40,9 +40,9 @@ export default function CreateProductModal({
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const availabilityOptions = [
-    { label: 'In Stock', value: 'in_stock' },
-    { label: 'Pre-order', value: 'pre_order' },
-    { label: 'Discontinued', value: 'discontinued' },
+    { label: 'In Stock', value: 'IN_STOCK' },
+    { label: 'Pre-order', value: 'PRE_ORDER' },
+    { label: 'Discontinued', value: 'DISCONTINUED' },
   ];
 
   // Генерируем дни (1-31)
@@ -96,22 +96,32 @@ export default function CreateProductModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Формируем дату из отдельных полей
-    const preorderDate = form.preorder_day && form.preorder_month && form.preorder_year
-      ? `${form.preorder_year}-${form.preorder_month.padStart(2, '0')}-${form.preorder_day.padStart(2, '0')}`
-      : '';
-    
-    const submitData = {
-      ...form,
-      category_id: parseInt(form.category_id) || 0,
-      availability_type: form.availability_type as any,
-      preorder_available_date: preorderDate
-    };
-    
-    await createProduct(submitData);
-    resetForm();
-    setImagePreviews([]);
-    onClose();
+    try {
+      // Формируем дату из отдельных полей
+      const preorderDate = form.preorder_day && form.preorder_month && form.preorder_year
+        ? `${form.preorder_year}-${form.preorder_month.padStart(2, '0')}-${form.preorder_day.padStart(2, '0')}`
+        : null;
+      
+      const submitData = {
+        name: form.name,
+        description: form.description,
+        price: parseFloat(String(form.price)),
+        category_id: parseInt(form.category_id) || 0,
+        stock_quantity: parseInt(String(form.stock_quantity)) || 0,
+        availability_type: form.availability_type as any,
+        preorder_available_date: preorderDate,
+        is_active: form.is_active,
+        images: form.images
+      };
+      
+      await createProduct(submitData);
+      resetForm();
+      setImagePreviews([]);
+      onClose();
+    } catch (error) {
+      console.error('Failed to create product:', error);
+      // Можно добавить уведомление об ошибке
+    }
   };
 
   const handleClose = () => {

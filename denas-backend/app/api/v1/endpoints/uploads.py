@@ -143,7 +143,7 @@ async def upload_product_images(
     """
     try:
         # Check if user has admin privileges (you might want to use admin dependency)
-        if current_user.role.value not in ["ADMIN", "MANAGER"]:
+        if current_user.role.value not in ["Admin", "Manager"]:
             raise HTTPException(
                 status_code=403,
                 detail="Only admins can upload product images"

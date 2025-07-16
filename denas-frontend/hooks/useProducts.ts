@@ -70,18 +70,38 @@ export function useProducts() {
       
       // Загружаем изображения если они есть
       if (productData.images && productData.images.length > 0) {
-        const uploadResponse = await api.uploadProductImages(productData.images);
-        imageUrls = uploadResponse.image_urls;
+        try {
+          const uploadResponse = await api.uploadProductImages(productData.images);
+          imageUrls = uploadResponse.image_urls;
+        } catch (uploadError: any) {
+          // If product image upload fails due to permissions, try regular upload
+          if (uploadError.message?.includes('Forbidden') || uploadError.message?.includes('403')) {
+            console.warn('Product image upload failed, trying regular upload...');
+            const regularUploadResponse = await api.uploadMultipleFiles(productData.images, 'product-images');
+            imageUrls = regularUploadResponse.files.map(f => f.file_url);
+          } else {
+            throw uploadError;
+          }
+        }
       }
       
-      // Создаем продукт с URL изображений
+      // Если есть уже готовые URL изображений, добавляем их
+      if (productData.image_urls && productData.image_urls.length > 0) {
+        imageUrls = [...imageUrls, ...productData.image_urls];
+      }
+      
+      // Создаем продукт с правильной структурой данных для бэкенда
       const productPayload = {
-        ...productData,
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        category_id: productData.category_id,
+        stock_quantity: productData.stock_quantity || 0,
+        availability_type: productData.availability_type || 'IN_STOCK',
+        preorder_available_date: productData.preorder_available_date || null,
+        is_active: productData.is_active !== undefined ? productData.is_active : true,
         image_urls: imageUrls
       };
-      
-      // Удаляем файлы из payload, так как они больше не нужны
-      delete (productPayload as any).images;
       
       const product = await api.post<Product>("/products", productPayload);
       
@@ -102,18 +122,42 @@ export function useProducts() {
       
       // Загружаем изображения если они есть
       if (productData.images && productData.images.length > 0) {
-        const uploadResponse = await api.uploadProductImages(productData.images);
-        imageUrls = uploadResponse.image_urls;
+        try {
+          const uploadResponse = await api.uploadProductImages(productData.images);
+          imageUrls = uploadResponse.image_urls;
+        } catch (uploadError: any) {
+          // If product image upload fails due to permissions, try regular upload
+          if (uploadError.message?.includes('Forbidden') || uploadError.message?.includes('403')) {
+            console.warn('Product image upload failed, trying regular upload...');
+            const regularUploadResponse = await api.uploadMultipleFiles(productData.images, 'product-images');
+            imageUrls = regularUploadResponse.files.map(f => f.file_url);
+          } else {
+            throw uploadError;
+          }
+        }
       }
       
-      // Обновляем продукт с URL изображений
-      const productPayload = {
-        ...productData,
-        image_urls: imageUrls.length > 0 ? imageUrls : productData.image_urls
-      };
+      // Если есть уже готовые URL изображений, используем их
+      if (productData.image_urls && productData.image_urls.length > 0) {
+        imageUrls = [...imageUrls, ...productData.image_urls];
+      }
       
-      // Удаляем файлы из payload, так как они больше не нужны
-      delete (productPayload as any).images;
+      // Обновляем продукт с правильной структурой данных
+      const productPayload: any = {};
+      
+      if (productData.name !== undefined) productPayload.name = productData.name;
+      if (productData.description !== undefined) productPayload.description = productData.description;
+      if (productData.price !== undefined) productPayload.price = productData.price;
+      if (productData.category_id !== undefined) productPayload.category_id = productData.category_id;
+      if (productData.stock_quantity !== undefined) productPayload.stock_quantity = productData.stock_quantity;
+      if (productData.availability_type !== undefined) productPayload.availability_type = productData.availability_type;
+      if (productData.preorder_available_date !== undefined) productPayload.preorder_available_date = productData.preorder_available_date;
+      if (productData.is_active !== undefined) productPayload.is_active = productData.is_active;
+      
+      // Добавляем image_urls только если есть новые изображения
+      if (imageUrls.length > 0) {
+        productPayload.image_urls = imageUrls;
+      }
       
       const product = await api.put<Product>(`/products/${id}`, productPayload);
       
