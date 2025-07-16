@@ -41,12 +41,15 @@ export default function ProductsTable({ products, loading, onEdit, onDelete }: P
           <TableColumn>STATUS</TableColumn>
           <TableColumn>ACTIONS</TableColumn>
         </TableHeader>
-        <TableBody isLoading={loading}>
+        <TableBody 
+          isLoading={loading} 
+          emptyContent={!loading && filteredProducts.length === 0 ? "No products found" : undefined}
+        >
           {filteredProducts.map((product) => (
             <TableRow key={product.id}>
               <TableCell>{product.id}</TableCell>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>${product.price}</TableCell>
+              <TableCell>{product.name || 'N/A'}</TableCell>
+              <TableCell>${product.price || '0.00'}</TableCell>
               <TableCell>{product.category?.name || '-'}</TableCell>
               <TableCell>
                 <span className={`px-2 py-1 rounded-full text-xs ${
