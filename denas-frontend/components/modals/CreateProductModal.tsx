@@ -1,31 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Card, CardBody } from '@heroui/card';
 import { Select, SelectItem } from '@heroui/select';
 import { Switch } from '@heroui/switch';
 import { Form } from '@heroui/form';
-import { useModal } from '@/hooks/useModal';
 import { useForm } from '@/hooks/useForm';
-import { Category } from '@/types';
+import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 
 interface CreateProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => Promise<void>;
-  categories: Category[];
-  loading: boolean;
 }
 
 export default function CreateProductModal({ 
   isOpen, 
-  onClose, 
-  onSubmit, 
-  categories, 
-  loading 
+  onClose
 }: CreateProductModalProps) {
+  const { createProduct, loading } = useProducts();
+  const { categories = [], fetchCategories } = useCategories();
+  
   const { form, setForm, handleInput, resetForm } = useForm({
     name: '',
     description: '',
@@ -77,6 +74,10 @@ export default function CreateProductModal({
     value: String(currentYear + i)
   }));
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files!);
@@ -102,12 +103,15 @@ export default function CreateProductModal({
     
     const submitData = {
       ...form,
+      category_id: parseInt(form.category_id) || 0,
+      availability_type: form.availability_type as any,
       preorder_available_date: preorderDate
     };
     
-    await onSubmit(submitData);
+    await createProduct(submitData);
     resetForm();
     setImagePreviews([]);
+    onClose();
   };
 
   const handleClose = () => {

@@ -1,91 +1,220 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from decimal import Decimal
 import logging
 
-from app.db.database import get_db
-from app.models.product import AvailabilityType
-from app.schemas.product import (
-    ProductCreateRequest, ProductUpdate, ProductResponse, 
-    ProductCatalog, ProductResponseSpecific
-)
-from app.api.dependencies import require_admin_access
-from app.models.user import User
+from app.db.session import get_db
 from app.services.products_service import ProductService
+from app.schemas.product import (
+    Product, ProductCreate, ProductUpdate, ProductCatalog, 
+    ProductWithDetails, ProductListResponse, AvailabilityType
+)
+from app.api.dependencies import get_current_user, require_admin_access, get_current_user_optional
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# PUBLIC ENDPOINTS - Catalog and Browse
 
-@router.get("/", response_model=List[ProductCatalog])
+# Public endpoints for product catalog
+@router.get("/catalog", response_model=ProductListResponse)
 async def get_products_catalog(
-    # Pagination
-    skip: int = Query(0, ge=0, description="Number of products to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of products to return"),
-    
-    # Filtering
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(20, ge=1, le=100, description="Page size"),
     category_id: Optional[int] = Query(None, description="Filter by category ID"),
+    min_price: Optional[Decimal] = Query(None, ge=0, description="Minimum price filter"),
+    max_price: Optional[Decimal] = Query(None, ge=0, description="Maximum price filter"),
     availability_type: Optional[AvailabilityType] = Query(None, description="Filter by availability type"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    min_price: Optional[float] = Query(None, ge=0, description="Minimum price filter"),
-    max_price: Optional[float] = Query(None, ge=0, description="Maximum price filter"),
-    search: Optional[str] = Query(None, description="Search in name or description"),
-    
+    is_active: Optional[bool] = Query(True, description="Filter by active status"),
+    search: Optional[str] = Query(None, description="Search in product name and description"),
+    sort_by: str = Query("created_at", description="Sort by: name, price, created_at"),
+    sort_order: str = Query("desc", description="Sort order: asc, desc"),
     db: Session = Depends(get_db)
 ):
     """
-    Get products for catalog/listing views (public endpoint)
-    Returns lightweight ProductCatalog with minimal data optimized for browsing:
-    - Basic product info (id, name, price, availability)
-    - Category name only
-    - Primary image only
-    - Favorites count
+    Get products catalog with filtering, searching, and pagination (public endpoint)
     """
     try:
-        service = ProductService(db)
+        skip = (page - 1) * size
         
-        # Use catalog-optimized method
-        products = service.get_products_catalog(
+        products, total = await ProductService.get_products_catalog(
+            db=db,
             skip=skip,
-            limit=limit,
+            limit=size,
             category_id=category_id,
-            availability_type=availability_type,
-            is_active=is_active,
             min_price=min_price,
             max_price=max_price,
-            search=search
+            availability_type=availability_type,
+            is_active=is_active,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order
         )
         
-        return products
+        return ProductListResponse(
+            items=products,
+            total=total,
+            page=page,
+            size=size,
+            has_next=skip + size < total,
+            has_previous=page > 1
+        )
         
     except Exception as e:
-        logger.error(f"Unexpected error in get_products_catalog: {str(e)}")
+        logger.error(f"Error fetching products catalog: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Failed to fetch products catalog"
         )
 
 
-@router.get("/{product_id}", response_model=ProductResponseSpecific)
-async def get_product_detailed(
-    product_id: int,
+@router.get("/featured", response_model=List[ProductCatalog])
+async def get_featured_products(
+    limit: int = Query(10, ge=1, le=50, description="Number of featured products to return"),
     db: Session = Depends(get_db)
 ):
     """
-    Get detailed product information for specific product views (public endpoint)
-    Returns comprehensive ProductResponseSpecific with full data:
-    - Complete product information including description, stock quantity
-    - Full category object with all details
-    - All product images
-    - Favorites count
+    Get featured products (public endpoint)
     """
     try:
-        service = ProductService(db)
+        products = await ProductService.get_featured_products(db=db, limit=limit)
         
-        # Use detailed-optimized method
-        product = service.get_product_detailed(product_id)
+        # Convert to catalog format
+        catalog_products = []
+        for product in products:
+            primary_image = next(
+                (img for img in product.images if img.image_type.value == "official"),
+                product.images[0] if product.images else None
+            )
+            
+            catalog_product = ProductCatalog(
+                id=product.id,
+                name=product.name,
+                price=product.price,
+                image_url=primary_image.image_url if primary_image else None,
+                availability_type=product.availability_type,
+                is_active=product.is_active,
+                category_id=product.category_id
+            )
+            catalog_products.append(catalog_product)
+        
+        return catalog_products
+        
+    except Exception as e:
+        logger.error(f"Error fetching featured products: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch featured products"
+        )
+
+
+@router.get("/search", response_model=List[ProductCatalog])
+async def search_products(
+    q: str = Query(..., min_length=1, description="Search query"),
+    skip: int = Query(0, ge=0, description="Number of products to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of products to return"),
+    db: Session = Depends(get_db)
+):
+    """
+    Search products by name or description (public endpoint)
+    """
+    try:
+        products = await ProductService.search_products(
+            db=db,
+            search_term=q,
+            skip=skip,
+            limit=limit
+        )
+        
+        # Convert to catalog format
+        catalog_products = []
+        for product in products:
+            primary_image = next(
+                (img for img in product.images if img.image_type.value == "official"),
+                product.images[0] if product.images else None
+            )
+            
+            catalog_product = ProductCatalog(
+                id=product.id,
+                name=product.name,
+                price=product.price,
+                image_url=primary_image.image_url if primary_image else None,
+                availability_type=product.availability_type,
+                is_active=product.is_active,
+                category_id=product.category_id
+            )
+            catalog_products.append(catalog_product)
+        
+        return catalog_products
+        
+    except Exception as e:
+        logger.error(f"Error searching products: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to search products"
+        )
+
+
+@router.get("/category/{category_id}", response_model=List[ProductCatalog])
+async def get_products_by_category(
+    category_id: int,
+    skip: int = Query(0, ge=0, description="Number of products to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of products to return"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get products by category (public endpoint)
+    """
+    try:
+        products = await ProductService.get_products_by_category(
+            db=db,
+            category_id=category_id,
+            skip=skip,
+            limit=limit
+        )
+        
+        # Convert to catalog format
+        catalog_products = []
+        for product in products:
+            primary_image = next(
+                (img for img in product.images if img.image_type.value == "official"),
+                product.images[0] if product.images else None
+            )
+            
+            catalog_product = ProductCatalog(
+                id=product.id,
+                name=product.name,
+                price=product.price,
+                image_url=primary_image.image_url if primary_image else None,
+                availability_type=product.availability_type,
+                is_active=product.is_active,
+                category_id=product.category_id
+            )
+            catalog_products.append(catalog_product)
+        
+        return catalog_products
+        
+    except Exception as e:
+        logger.error(f"Error fetching products by category {category_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch products by category"
+        )
+
+
+@router.get("/{product_id}", response_model=ProductWithDetails)
+async def get_product_details(
+    product_id: int,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed product information (public endpoint)
+    """
+    try:
+        product = await ProductService.get_product_with_details(db=db, product_id=product_id)
         
         if not product:
             raise HTTPException(
@@ -93,266 +222,140 @@ async def get_product_detailed(
                 detail="Product not found"
             )
         
+        # If user is not admin, only show active products
+        if not current_user or current_user.role.value not in ["Admin", "Manager"]:
+            if not product.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Product not found"
+                )
+        
         return product
         
     except HTTPException:
-        # Re-raise HTTP exceptions from service layer
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in get_product_detailed: {str(e)}")
+        logger.error(f"Error fetching product details for {product_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Failed to fetch product details"
         )
 
 
-@router.get("/category/{category_id}/products", response_model=List[ProductCatalog])
-async def get_products_by_category(
-    category_id: int,
+# Admin endpoints
+@router.get("/", response_model=List[Product])
+async def get_all_products(
     skip: int = Query(0, ge=0, description="Number of products to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of products to return"),
-    availability_type: Optional[AvailabilityType] = Query(None, description="Filter by availability type"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    min_price: Optional[float] = Query(None, ge=0, description="Minimum price filter"),
-    max_price: Optional[float] = Query(None, ge=0, description="Maximum price filter"),
+    limit: int = Query(100, ge=1, le=200, description="Maximum number of products to return"),
+    admin_user: User = Depends(require_admin_access),
     db: Session = Depends(get_db)
 ):
     """
-    Get products in a specific category for catalog views (public endpoint)
-    Returns lightweight ProductCatalog optimized for category browsing
+    Get all products including inactive ones (admin only)
     """
     try:
-        service = ProductService(db)
-        
-        # Use catalog method with category filter
-        products = service.get_products_catalog(
+        products, _ = await ProductService.get_products_catalog(
+            db=db,
             skip=skip,
             limit=limit,
-            category_id=category_id,
-            availability_type=availability_type,
-            is_active=is_active,
-            min_price=min_price,
-            max_price=max_price
+            is_active=None  # Include both active and inactive
         )
         
         return products
         
     except Exception as e:
-        logger.error(f"Unexpected error in get_products_by_category: {str(e)}")
+        logger.error(f"Error fetching all products: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Failed to fetch products"
         )
 
 
-@router.get("/search/products", response_model=List[ProductCatalog])
-async def search_products(
-    q: str = Query(..., description="Search query for product name or description"),
-    skip: int = Query(0, ge=0, description="Number of products to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of products to return"),
-    category_id: Optional[int] = Query(None, description="Filter by category ID"),
-    availability_type: Optional[AvailabilityType] = Query(None, description="Filter by availability type"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    min_price: Optional[float] = Query(None, ge=0, description="Minimum price filter"),
-    max_price: Optional[float] = Query(None, ge=0, description="Maximum price filter"),
-    db: Session = Depends(get_db)
-):
-    """
-    Search products with text query for catalog views (public endpoint)
-    Returns lightweight ProductCatalog optimized for search results
-    """
-    try:
-        service = ProductService(db)
-        
-        # Use catalog method with search
-        products = service.get_products_catalog(
-            skip=skip,
-            limit=limit,
-            category_id=category_id,
-            availability_type=availability_type,
-            is_active=is_active,
-            min_price=min_price,
-            max_price=max_price,
-            search=q
-        )
-        
-        return products
-        
-    except Exception as e:
-        logger.error(f"Unexpected error in search_products: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-# ADMIN ENDPOINTS - Full CRUD operations
-
-@router.post("/", response_model=ProductResponseSpecific, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=Product, status_code=status.HTTP_201_CREATED)
 async def create_product(
-    product_data: ProductCreateRequest,
-    db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin_access)
+    product_data: ProductCreate,
+    admin_user: User = Depends(require_admin_access),
+    db: Session = Depends(get_db)
 ):
     """
-    Create a new product with images (admin only)
-    Returns detailed ProductResponseSpecific
+    Create a new product (admin only)
     """
     try:
-        service = ProductService(db)
+        product = await ProductService.create_product(db=db, product_data=product_data)
         
-        # Service handles all validation (category exists, etc.)
-        product = service.create_product_with_images(product_data)
-        
-        logger.info(f"Product created: {product.name} (ID: {product.id}) by admin {admin_user.id}")
+        logger.info(f"Product created successfully: {product.name} by admin {admin_user.id}")
         return product
         
-    except HTTPException:
-        # Service layer provides proper HTTP exceptions
-        raise
     except Exception as e:
-        logger.error(f"Unexpected error in create_product: {str(e)}")
+        logger.error(f"Error creating product: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Failed to create product"
         )
 
 
-@router.put("/{product_id}", response_model=ProductResponseSpecific)
+@router.put("/{product_id}", response_model=Product)
 async def update_product(
     product_id: int,
     product_data: ProductUpdate,
-    db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin_access)
+    admin_user: User = Depends(require_admin_access),
+    db: Session = Depends(get_db)
 ):
     """
     Update a product (admin only)
-    Returns detailed ProductResponseSpecific
     """
     try:
-        service = ProductService(db)
+        product = await ProductService.update_product(
+            db=db,
+            product_id=product_id,
+            product_data=product_data
+        )
         
-        # Service handles validation (product exists, category exists, etc.)
-        updated_product = service.update_product(product_id, product_data)
+        if not product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Product not found"
+            )
         
-        logger.info(f"Product updated: {updated_product.name} (ID: {product_id}) by admin {admin_user.id}")
-        return updated_product
+        logger.info(f"Product updated successfully: {product.name} by admin {admin_user.id}")
+        return product
         
     except HTTPException:
-        # Service layer provides proper HTTP exceptions
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in update_product: {str(e)}")
+        logger.error(f"Error updating product {product_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Failed to update product"
         )
 
 
 @router.delete("/{product_id}")
 async def delete_product(
     product_id: int,
-    db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin_access)
+    admin_user: User = Depends(require_admin_access),
+    db: Session = Depends(get_db)
 ):
     """
     Delete a product (admin only)
     """
     try:
-        service = ProductService(db)
+        deleted = await ProductService.delete_product(db=db, product_id=product_id)
         
-        # Service handles validation (product exists) and deletion
-        service.delete_product(product_id)
-        
-        logger.info(f"Product deleted (ID: {product_id}) by admin {admin_user.id}")
-        return {"success": True, "message": "Product deleted successfully"}
-        
-    except HTTPException:
-        # Service layer provides proper HTTP exceptions
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error in delete_product: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-@router.get("/admin/stats")
-async def get_product_statistics(
-    db: Session = Depends(get_db),
-    admin_user: User = Depends(require_admin_access)
-):
-    """
-    Get product statistics (admin only)
-    """
-    try:
-        service = ProductService(db)
-        stats = service.get_product_stats()
-        
-        logger.info(f"Product stats requested by admin {admin_user.id}")
-        return stats
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error in get_product_statistics: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
-
-
-# LEGACY ENDPOINT - Backward compatibility
-
-@router.get("/legacy/all", response_model=List[ProductResponse])
-async def get_all_products_legacy(
-    skip: int = Query(0, ge=0, description="Number of products to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of products to return"),
-    product_id: Optional[int] = Query(None, description="Get specific product by ID"),
-    category_id: Optional[int] = Query(None, description="Filter by category ID"),
-    availability_type: Optional[AvailabilityType] = Query(None, description="Filter by availability type"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    min_price: Optional[float] = Query(None, ge=0, description="Minimum price filter"),
-    max_price: Optional[float] = Query(None, ge=0, description="Maximum price filter"),
-    search: Optional[str] = Query(None, description="Search in name or description"),
-    db: Session = Depends(get_db)
-):
-    """
-    Legacy endpoint for backward compatibility
-    Use /products/ (catalog) or /products/{id} (detailed) instead
-    """
-    try:
-        service = ProductService(db)
-        
-        # Use legacy method for backward compatibility
-        products = service.get_products_with_filters(
-            skip=skip,
-            limit=limit,
-            product_id=product_id,
-            category_id=category_id,
-            availability_type=availability_type,
-            is_active=is_active,
-            min_price=min_price,
-            max_price=max_price,
-            search=search
-        )
-        
-        # Service layer handles all business logic including 404 for single product
-        if product_id and not products:
+        if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Product not found"
             )
         
-        return products
+        logger.info(f"Product deleted successfully by admin {admin_user.id}")
+        return {"success": True, "message": "Product deleted successfully"}
         
     except HTTPException:
-        # Re-raise HTTP exceptions from service layer
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in get_all_products_legacy: {str(e)}")
+        logger.error(f"Error deleting product {product_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        ) 
+            detail="Failed to delete product"
+        )

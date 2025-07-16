@@ -113,6 +113,69 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Upload methods
+  async uploadFile(file: File, folder: string = 'uploads'): Promise<{success: boolean, file_url: string}> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE}/uploads/single`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to upload file: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async uploadMultipleFiles(files: File[], folder: string = 'uploads'): Promise<{success: boolean, files: Array<{file_url: string}>}> {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    formData.append('folder', folder);
+
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE}/uploads/multiple`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to upload files: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async uploadProductImages(files: File[]): Promise<{success: boolean, image_urls: string[]}> {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE}/uploads/product-images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to upload product images: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
 }
 
 // Create and export API instance
@@ -206,5 +269,47 @@ export class BaseService {
     if (!response.ok) {
       throw new Error(`Failed to delete item: ${response.statusText}`);
     }
+  }
+
+  async uploadFile(file: File, folder: string = 'uploads'): Promise<{success: boolean, file_url: string}> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE}/uploads/single`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to upload file: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async uploadMultipleFiles(files: File[], folder: string = 'uploads'): Promise<{success: boolean, files: Array<{file_url: string}>}> {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    formData.append('folder', folder);
+
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE}/uploads/multiple`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to upload files: ${response.statusText}`);
+    }
+    
+    return response.json();
   }
 } 

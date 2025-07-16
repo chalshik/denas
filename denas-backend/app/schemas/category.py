@@ -28,7 +28,13 @@ class Category(CategoryInDB):
 
 
 class CategoryWithProducts(CategoryInDB):
-    products: Optional[List[dict]] = []
+    products: List["Product"] = []
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+
+# Avoid circular import by using forward reference
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.schemas.product import Product

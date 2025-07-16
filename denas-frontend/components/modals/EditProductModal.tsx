@@ -8,32 +8,33 @@ import { Select, SelectItem } from '@heroui/select';
 import { Switch } from '@heroui/switch';
 import { Form } from '@heroui/form';
 import { useForm } from '@/hooks/useForm';
-import { Category, Product } from '@/types';
+import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
+import { Product } from '@/types';
 
 interface EditProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => Promise<void>;
   product: Product | null;
-  categories: Category[];
-  loading: boolean;
 }
 
 export default function EditProductModal({ 
   isOpen, 
   onClose, 
-  onSubmit, 
-  product, 
-  categories, 
-  loading 
+  product
 }: EditProductModalProps) {
+  const { updateProduct, loading } = useProducts();
+  const { categories = [], fetchCategories } = useCategories();
+  
   const { form, setForm, handleInput, resetForm } = useForm({
     name: '',
     description: '',
     price: 1,
     stock_quantity: 0,
     availability_type: 'in_stock',
-    preorder_available_date: '',
+    preorder_day: '',
+    preorder_month: '',
+    preorder_year: '',
     is_active: true,
     category_id: '',
     images: [] as File[],
@@ -47,16 +48,63 @@ export default function EditProductModal({
     { label: 'Discontinued', value: 'discontinued' },
   ];
 
+  // Генерируем дни (1-31)
+  const dayOptions = Array.from({ length: 31 }, (_, i) => ({
+    label: String(i + 1),
+    value: String(i + 1)
+  }));
+
+  // Генерируем месяцы
+  const monthOptions = [
+    { label: 'January', value: '1' },
+    { label: 'February', value: '2' },
+    { label: 'March', value: '3' },
+    { label: 'April', value: '4' },
+    { label: 'May', value: '5' },
+    { label: 'June', value: '6' },
+    { label: 'July', value: '7' },
+    { label: 'August', value: '8' },
+    { label: 'September', value: '9' },
+    { label: 'October', value: '10' },
+    { label: 'November', value: '11' },
+    { label: 'December', value: '12' }
+  ];
+
+  // Генерируем годы (текущий год + 5 лет вперед)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 6 }, (_, i) => ({
+    label: String(currentYear + i),
+    value: String(currentYear + i)
+  }));
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   // Pre-fill form when product changes
   useEffect(() => {
     if (product) {
+      // Разбираем дату preorder_available_date на компоненты
+      let preorderDay = '';
+      let preorderMonth = '';
+      let preorderYear = '';
+      
+      if (product.preorder_available_date) {
+        const date = new Date(product.preorder_available_date);
+        preorderDay = String(date.getDate());
+        preorderMonth = String(date.getMonth() + 1);
+        preorderYear = String(date.getFullYear());
+      }
+      
       setForm({
         name: product.name || '',
         description: product.description || '',
         price: product.price || 1,
         stock_quantity: product.stock_quantity || 0,
         availability_type: product.availability_type || 'in_stock',
-        preorder_available_date: product.preorder_available_date || '',
+        preorder_day: preorderDay,
+        preorder_month: preorderMonth,
+        preorder_year: preorderYear,
         is_active: product.is_active ?? true,
         category_id: product.category_id?.toString() || '',
         images: [],
@@ -81,9 +129,24 @@ export default function EditProductModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(form);
+    if (!product) return;
+    
+    // Формируем дату из отдельных полей
+    const preorderDate = form.preorder_day && form.preorder_month && form.preorder_year
+      ? `${form.preorder_year}-${form.preorder_month.padStart(2, '0')}-${form.preorder_day.padStart(2, '0')}`
+      : '';
+    
+    const submitData = {
+      ...form,
+      category_id: parseInt(form.category_id) || undefined,
+      availability_type: form.availability_type as any,
+      preorder_available_date: preorderDate
+    };
+    
+    await updateProduct(product.id, submitData);
     resetForm();
     setImagePreviews([]);
+    onClose();
   };
 
   const handleClose = () => {
@@ -100,83 +163,192 @@ export default function EditProductModal({
         <Form onSubmit={handleSubmit} className="space-y-4">
           <h2 className="text-xl font-bold mb-2">Edit Product</h2>
           
-          <Input 
-            label="Name" 
-            name="name" 
-            value={form.name} 
-            onChange={handleInput} 
-            required 
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Name</label>
+            <Input 
+              name="name" 
+              value={form.name} 
+              onChange={handleInput} 
+              required 
+              fullWidth
+              classNames={{
+                base: "w-full",
+                mainWrapper: "w-full",
+                input: "w-full",
+                inputWrapper: "w-full"
+              }}
+            />
+          </div>
           
-          <Input 
-            label="Description" 
-            name="description" 
-            value={form.description} 
-            onChange={handleInput} 
-            required 
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Description</label>
+            <Input 
+              name="description" 
+              value={form.description} 
+              onChange={handleInput} 
+              required 
+              fullWidth
+              classNames={{
+                base: "w-full",
+                mainWrapper: "w-full",
+                input: "w-full",
+                inputWrapper: "w-full"
+              }}
+            />
+          </div>
           
-          <Input 
-            label="Price" 
-            name="price" 
-            type="number" 
-            value={String(form.price)} 
-            onChange={handleInput} 
-            required 
-            min={0.01} 
-            step={0.01} 
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Price</label>
+            <Input 
+              name="price" 
+              type="number" 
+              value={String(form.price)} 
+              onChange={handleInput} 
+              required 
+              min={0.01} 
+              step={0.01}
+              fullWidth
+              classNames={{
+                base: "w-full",
+                mainWrapper: "w-full",
+                input: "w-full",
+                inputWrapper: "w-full"
+              }}
+            />
+          </div>
           
-          <Input 
-            label="Stock Quantity" 
-            name="stock_quantity" 
-            type="number" 
-            value={String(form.stock_quantity)} 
-            onChange={handleInput} 
-            required 
-            min={0} 
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Stock Quantity</label>
+            <Input 
+              name="stock_quantity" 
+              type="number" 
+              value={String(form.stock_quantity)} 
+              onChange={handleInput} 
+              required 
+              min={0}
+              fullWidth
+              classNames={{
+                base: "w-full",
+                mainWrapper: "w-full",
+                input: "w-full",
+                inputWrapper: "w-full"
+              }}
+            />
+          </div>
           
-          <Select
-            label="Availability Type"
-            selectedKeys={[form.availability_type]}
-            onSelectionChange={keys => handleInput({ target: { name: 'availability_type', value: Array.from(keys)[0] } } as any)}
-          >
-            <>
-              {availabilityOptions.map(opt => (
-                <SelectItem key={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </>
-          </Select>
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Availability Type</label>
+            <Select
+              selectedKeys={[form.availability_type]}
+              onSelectionChange={keys => handleInput({ target: { name: 'availability_type', value: Array.from(keys)[0] } } as any)}
+              fullWidth
+              classNames={{
+                base: "w-full",
+                mainWrapper: "w-full",
+                trigger: "w-full"
+              }}
+            >
+              <>
+                {availabilityOptions.map(opt => (
+                  <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </>
+            </Select>
+          </div>
           
-          <Input 
-            label="Preorder Available Date" 
-            name="preorder_available_date" 
-            type="datetime-local" 
-            value={form.preorder_available_date} 
-            onChange={handleInput} 
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Preorder Available Date</label>
+            <div className="flex gap-2">
+              <Select
+                selectedKeys={[form.preorder_day]}
+                onSelectionChange={keys => handleInput({ target: { name: 'preorder_day', value: Array.from(keys)[0] } } as any)}
+                placeholder="Day"
+                classNames={{
+                  base: "flex-1",
+                  mainWrapper: "w-full",
+                  trigger: "w-full"
+                }}
+              >
+                <>
+                  {dayOptions.map(opt => (
+                    <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </>
+              </Select>
+              
+              <Select
+                selectedKeys={[form.preorder_month]}
+                onSelectionChange={keys => handleInput({ target: { name: 'preorder_month', value: Array.from(keys)[0] } } as any)}
+                placeholder="Month"
+                classNames={{
+                  base: "flex-1",
+                  mainWrapper: "w-full",
+                  trigger: "w-full"
+                }}
+              >
+                <>
+                  {monthOptions.map(opt => (
+                    <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </>
+              </Select>
+              
+              <Select
+                selectedKeys={[form.preorder_year]}
+                onSelectionChange={keys => handleInput({ target: { name: 'preorder_year', value: Array.from(keys)[0] } } as any)}
+                placeholder="Year"
+                classNames={{
+                  base: "flex-1",
+                  mainWrapper: "w-full",
+                  trigger: "w-full"
+                }}
+              >
+                <>
+                  {yearOptions.map(opt => (
+                    <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </>
+              </Select>
+            </div>
+          </div>
           
-          <Select
-            label="Category"
-            selectedKeys={[form.category_id]}
-            onSelectionChange={keys => handleInput({ target: { name: 'category_id', value: Array.from(keys)[0] } } as any)}
-            required
-          >
-            <>
-              <SelectItem key="">Select category</SelectItem>
-              {categories.map(cat => <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>)}
-            </>
-          </Select>
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Category</label>
+            <Select
+              selectedKeys={[form.category_id]}
+              onSelectionChange={keys => handleInput({ target: { name: 'category_id', value: Array.from(keys)[0] } } as any)}
+              required
+              fullWidth
+              classNames={{
+                base: "w-full",
+                mainWrapper: "w-full",
+                trigger: "w-full"
+              }}
+            >
+              <>
+                <SelectItem key="">Select category</SelectItem>
+                {categories.map(cat => <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>)}
+              </>
+            </Select>
+          </div>
           
-          <Input 
-            label="Images" 
-            name="images" 
-            type="file" 
-            multiple 
-            accept="image/*" 
-            onChange={handleImageChange} 
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-black mb-1">Images</label>
+            <Input 
+              name="images" 
+              type="file" 
+              multiple 
+              accept="image/*" 
+              onChange={handleImageChange}
+              fullWidth
+              classNames={{
+                base: "w-full",
+                mainWrapper: "w-full",
+                input: "w-full",
+                inputWrapper: "w-full"
+              }}
+            />
+          </div>
           
           {imagePreviews.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">

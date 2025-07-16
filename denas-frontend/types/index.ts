@@ -13,6 +13,12 @@ export interface Category {
   updated_at?: string;
 }
 
+export enum AvailabilityType {
+  IN_STOCK = "in_stock",
+  PRE_ORDER = "pre_order",
+  DISCONTINUED = "discontinued"
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -23,13 +29,53 @@ export interface Product {
     id: number;
     name: string;
   };
-  image_url?: string;
   stock_quantity?: number;
-  is_active?: boolean;
-  availability_type?: string;
+  availability_type?: AvailabilityType;
   preorder_available_date?: string;
+  is_active?: boolean;
   created_at?: string;
-  updated_at?: string;
+}
+
+export interface ProductCatalog {
+  id: number;
+  name: string;
+  price: number;
+  image_url?: string;
+  availability_type: AvailabilityType;
+  is_active: boolean;
+  category_id: number;
+}
+
+export interface ProductWithDetails extends Product {
+  category?: Category;
+  images: Array<{
+    id: number;
+    image_url: string;
+    image_type: string;
+    created_at: string;
+  }>;
+}
+
+export interface ProductListResponse {
+  items: ProductCatalog[];
+  total: number;
+  page: number;
+  size: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export interface ProductFilters {
+  page?: number;
+  size?: number;
+  category_id?: number;
+  min_price?: number;
+  max_price?: number;
+  availability_type?: AvailabilityType;
+  is_active?: boolean;
+  search?: string;
+  sort_by?: string;
+  sort_order?: string;
 }
 
 export interface CategoryWithProducts extends Category {
@@ -41,12 +87,14 @@ export interface ProductCreate {
   description?: string;
   price: number;
   category_id: number;
-  image_url?: string;
+  image_urls?: string[];
+  images?: File[]; // Для загрузки новых изображений
   stock_quantity?: number;
+  availability_type?: AvailabilityType;
+  preorder_available_date?: string;
+  is_active?: boolean;
 }
 
 export interface CategoryCreate {
   name: string;
-  description?: string;
-  image_url?: string;
 }

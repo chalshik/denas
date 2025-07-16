@@ -4,36 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/button';
 import { useModal } from '@/hooks/useModal';
 import { useProducts } from '@/hooks/useProducts';
-import { useCategories } from '@/hooks/useCategories';
 import ProductsTable from '@/components/tables/ProductsTable';
 import CreateProductModal from '@/components/modals/CreateProductModal';
 import EditProductModal from '@/components/modals/EditProductModal';
 import { Product } from '@/types';
 
 export default function AdminProductsPage() {
-  const { products = [], loading: loadingProducts, fetchProducts, createProduct, updateProduct, deleteProduct } = useProducts();
-  const { categories = [], fetchCategories } = useCategories();
+  const { products = [], loading: loadingProducts, fetchProducts, deleteProduct } = useProducts();
   const createModal = useModal();
   const editModal = useModal();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
   }, []);
-
-  const handleCreateProduct = async (productData: any) => {
-    await createProduct(productData);
-    createModal.close();
-  };
-
-  const handleEditProduct = async (productData: any) => {
-    if (selectedProduct) {
-      await updateProduct(selectedProduct.id, productData);
-      editModal.close();
-      setSelectedProduct(null);
-    }
-  };
 
   const handleDeleteProduct = async (productId: number) => {
     if (confirm('Are you sure you want to delete this product?')) {
@@ -44,6 +28,17 @@ export default function AdminProductsPage() {
   const handleEditClick = (product: Product) => {
     setSelectedProduct(product);
     editModal.open();
+  };
+
+  const handleCreateClose = () => {
+    createModal.close();
+    fetchProducts(); // Обновляем список после создания
+  };
+
+  const handleEditClose = () => {
+    editModal.close();
+    setSelectedProduct(null);
+    fetchProducts(); // Обновляем список после редактирования
   };
 
   return (
@@ -67,19 +62,13 @@ export default function AdminProductsPage() {
 
       <CreateProductModal
         isOpen={createModal.isOpen}
-        onClose={createModal.close}
-        onSubmit={handleCreateProduct}
-        categories={categories}
-        loading={loadingProducts}
+        onClose={handleCreateClose}
       />
 
       <EditProductModal
         isOpen={editModal.isOpen}
-        onClose={editModal.close}
-        onSubmit={handleEditProduct}
+        onClose={handleEditClose}
         product={selectedProduct}
-        categories={categories}
-        loading={loadingProducts}
       />
     </div>
   );

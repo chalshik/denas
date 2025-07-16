@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 import logging
 
-from app.db.database import get_db
-from app.models.category import Category as CategoryModel
+from app.db.session import get_db
+from app.services.category_service import CategoryService
 from app.schemas.category import Category, CategoryCreate, CategoryUpdate, CategoryWithProducts
 from app.api.dependencies import require_admin_access
 from app.models.user import User
@@ -24,7 +24,7 @@ async def get_all_categories(
     Get all categories (public endpoint)
     """
     try:
-        categories = db.query(CategoryModel).offset(skip).limit(limit).all()
+        categories = await CategoryService.get_all_categories(db=db, skip=skip, limit=limit)
         return categories
         
     except Exception as e:
@@ -44,7 +44,7 @@ async def get_category(
     Get a specific category by ID (public endpoint)
     """
     try:
-        category = db.query(CategoryModel).filter(CategoryModel.id == category_id).first()
+        category = await CategoryService.get_category_by_id(db=db, category_id=category_id)
         
         if not category:
             raise HTTPException(
@@ -73,7 +73,7 @@ async def get_category_with_products(
     Get a category with all its products (public endpoint)
     """
     try:
-        category = db.query(CategoryModel).filter(CategoryModel.id == category_id).first()
+        category = await CategoryService.get_category_with_products(db=db, category_id=category_id)
         
         if not category:
             raise HTTPException(
@@ -104,9 +104,12 @@ async def search_categories(
     Search categories by name (public endpoint)
     """
     try:
-        categories = db.query(CategoryModel).filter(
-            CategoryModel.name.ilike(f"%{search_term}%")
-        ).offset(skip).limit(limit).all()
+        categories = await CategoryService.search_categories(
+            db=db,
+            search_term=search_term,
+            skip=skip,
+            limit=limit
+        )
         
         return categories
         
@@ -129,31 +132,18 @@ async def create_category(
     Create a new category (admin only)
     """
     try:
-        # Check if category with this name already exists
-        existing_category = db.query(CategoryModel).filter(
-            CategoryModel.name == category_data.name
-        ).first()
-        
-        if existing_category:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Category with this name already exists"
-            )
-        
-        # Create new category
-        category = CategoryModel(**category_data.dict())
-        db.add(category)
-        db.commit()
-        db.refresh(category)
+        category = await CategoryService.create_category(db=db, category_data=category_data)
         
         logger.info(f"Category created successfully: {category.name} by admin {admin_user.id}")
         return category
         
-    except HTTPException:
-        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Error creating category: {str(e)}")
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create category"
@@ -171,43 +161,30 @@ async def update_category(
     Update a category (admin only)
     """
     try:
-        # Get existing category
-        category = db.query(CategoryModel).filter(CategoryModel.id == category_id).first()
+        category = await CategoryService.update_category(
+            db=db,
+            category_id=category_id,
+            category_data=category_data
+        )
+        
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Category not found"
             )
         
-        # Check if new name already exists (if name is being updated)
-        if category_data.name and category_data.name != category.name:
-            existing_category = db.query(CategoryModel).filter(
-                CategoryModel.name == category_data.name,
-                CategoryModel.id != category_id
-            ).first()
-            
-            if existing_category:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Category with this name already exists"
-                )
-        
-        # Update category
-        update_data = category_data.dict(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(category, field, value)
-        
-        db.commit()
-        db.refresh(category)
-        
         logger.info(f"Category updated successfully: {category.name} by admin {admin_user.id}")
         return category
         
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating category {category_id}: {str(e)}")
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update category"
@@ -224,26 +201,21 @@ async def delete_category(
     Delete a category (admin only)
     """
     try:
-        # Get category
-        category = db.query(CategoryModel).filter(CategoryModel.id == category_id).first()
-        if not category:
+        deleted = await CategoryService.delete_category(db=db, category_id=category_id)
+        
+        if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Category not found"
             )
         
-        # Delete category
-        db.delete(category)
-        db.commit()
-        
-        logger.info(f"Category deleted successfully: {category.name} by admin {admin_user.id}")
+        logger.info(f"Category deleted successfully by admin {admin_user.id}")
         return {"success": True, "message": "Category deleted successfully"}
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error deleting category {category_id}: {str(e)}")
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete category"
