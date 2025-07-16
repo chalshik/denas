@@ -24,6 +24,10 @@ export function useApi<T>() {
     setState(prev => ({ ...prev, error }));
   };
 
+  const setData = (data: T[]) => {
+    setState(prev => ({ ...prev, data }));
+  };
+
   // Fetch list
   const fetchList = async (endpoint: string, params?: Record<string, any>) => {
     setLoading(true);
@@ -154,5 +158,6 @@ export function useApi<T>() {
     deleteItem,
     setError,
     setLoading,
+    setData,
   };
-} 
+}

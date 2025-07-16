@@ -5,6 +5,18 @@ import { Category, CategoryCreate, CategoryWithProducts } from "../types";
 export function useCategories() {
   const apiHook = useApi<Category>();
 
+  const fetchCategories = async (): Promise<void> => {
+    apiHook.setLoading(true);
+    try {
+      const categories = await api.get<Category[]>("/categories");
+      apiHook.setData(categories);
+    } catch (error: any) {
+      apiHook.setError(error.message || "Failed to fetch categories");
+    } finally {
+      apiHook.setLoading(false);
+    }
+  };
+
   const getWithProducts = async (id: number): Promise<CategoryWithProducts> => {
     apiHook.setLoading(true);
     try {
@@ -20,6 +32,8 @@ export function useCategories() {
 
   return {
     ...apiHook,
+    categories: apiHook.data || [],
+    fetchCategories,
     getWithProducts,
   };
-} 
+}

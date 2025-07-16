@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@heroui/button';
 import { useModal } from '@/hooks/useModal';
-import { useProductsAdmin } from '@/app/hooks/useProductsAdmin';
-import { useCategories } from '@/app/hooks/useCategories';
+import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import ProductsTable from '@/components/tables/ProductsTable';
 import CreateProductModal from '@/components/modals/CreateProductModal';
 import EditProductModal from '@/components/modals/EditProductModal';
 import { Product } from '@/types';
 
 export default function AdminProductsPage() {
-  const { products, loading: loadingProducts, fetchProducts, createProduct, updateProduct, deleteProduct } = useProductsAdmin();
-  const { categories, fetchCategories } = useCategories();
+  const { products = [], loading: loadingProducts, fetchProducts, createProduct, updateProduct, deleteProduct } = useProducts();
+  const { categories = [], fetchCategories } = useCategories();
   const createModal = useModal();
   const editModal = useModal();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);

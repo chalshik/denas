@@ -82,83 +82,99 @@ export default function CreateProductModal({
         <Form onSubmit={handleSubmit} className="space-y-4">
           <h2 className="text-xl font-bold mb-2">Add New Product</h2>
           
-          <Input 
-            label="Name" 
-            name="name" 
-            value={form.name} 
-            onChange={handleInput} 
-            required 
-          />
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Name</label>
+            <Input 
+              name="name" 
+              value={form.name} 
+              onChange={handleInput} 
+              required 
+            />
+          </div>
           
-          <Input 
-            label="Description" 
-            name="description" 
-            value={form.description} 
-            onChange={handleInput} 
-            required 
-          />
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Description</label>
+            <Input 
+              name="description" 
+              value={form.description} 
+              onChange={handleInput} 
+              required 
+            />
+          </div>
           
-          <Input 
-            label="Price" 
-            name="price" 
-            type="number" 
-            value={String(form.price)} 
-            onChange={handleInput} 
-            required 
-            min={0.01} 
-            step={0.01} 
-          />
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Price</label>
+            <Input 
+              name="price" 
+              type="number" 
+              value={String(form.price)} 
+              onChange={handleInput} 
+              required 
+              min={0.01} 
+              step={0.01} 
+            />
+          </div>
           
-          <Input 
-            label="Stock Quantity" 
-            name="stock_quantity" 
-            type="number" 
-            value={String(form.stock_quantity)} 
-            onChange={handleInput} 
-            required 
-            min={0} 
-          />
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Stock Quantity</label>
+            <Input 
+              name="stock_quantity" 
+              type="number" 
+              value={String(form.stock_quantity)} 
+              onChange={handleInput} 
+              required 
+              min={0} 
+            />
+          </div>
           
-          <Select
-            label="Availability Type"
-            selectedKeys={[form.availability_type]}
-            onSelectionChange={keys => handleInput({ target: { name: 'availability_type', value: Array.from(keys)[0] } } as any)}
-          >
-            <>
-              {availabilityOptions.map(opt => (
-                <SelectItem key={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Availability Type</label>
+            <Select
+              selectedKeys={[form.availability_type]}
+              onSelectionChange={keys => handleInput({ target: { name: 'availability_type', value: Array.from(keys)[0] } } as any)}
+            >
+              <>
+                {availabilityOptions.map(opt => (
+                  <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </>
+            </Select>
+          </div>
           
-          <Input 
-            label="Preorder Available Date" 
-            name="preorder_available_date" 
-            type="datetime-local" 
-            value={form.preorder_available_date} 
-            onChange={handleInput} 
-          />
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Preorder Available Date</label>
+            <Input 
+              name="preorder_available_date" 
+              type="datetime-local" 
+              value={form.preorder_available_date} 
+              onChange={handleInput} 
+            />
+          </div>
           
-          <Select
-            label="Category"
-            selectedKeys={[form.category_id]}
-            onSelectionChange={keys => handleInput({ target: { name: 'category_id', value: Array.from(keys)[0] } } as any)}
-            required
-          >
-            <>
-              <SelectItem key="">Select category</SelectItem>
-              {categories.map(cat => <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>)}
-            </>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Category</label>
+            <Select
+              selectedKeys={[form.category_id]}
+              onSelectionChange={keys => handleInput({ target: { name: 'category_id', value: Array.from(keys)[0] } } as any)}
+              required
+            >
+              <>
+                <SelectItem key="">Select category</SelectItem>
+                {categories.map(cat => <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>)}
+              </>
+            </Select>
+          </div>
           
-          <Input 
-            label="Images" 
-            name="images" 
-            type="file" 
-            multiple 
-            accept="image/*" 
-            onChange={handleImageChange} 
-          />
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">Images</label>
+            <Input 
+              name="images" 
+              type="file" 
+              multiple 
+              accept="image/*" 
+              onChange={handleImageChange} 
+            />
+          </div>
           
           {imagePreviews.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
@@ -187,4 +203,4 @@ export default function CreateProductModal({
       </Card>
     </div>
   );
-} 
+}
