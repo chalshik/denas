@@ -6,7 +6,7 @@ import { Navbar as HeroNavbar, NavbarBrand, NavbarContent, NavbarItem, NavbarMen
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
 import { siteConfig } from '@/config/site';
-import { useAuth } from '@/app/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);

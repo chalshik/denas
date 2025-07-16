@@ -7,7 +7,7 @@ import { auth } from '@/lib/firebase';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Form } from '@heroui/form';
-import { useForm } from '@/app/hooks/useForm';
+import { useForm } from '@/hooks/useForm';
 
 interface LoginFormProps {
   onSwitchToRegister?: () => void;
