@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     SUPABASE_STORAGE_BUCKET: str = os.getenv("SUPABASE_STORAGE_BUCKET", "product-images")
     
+    # Firebase Configuration
+    FIREBASE_API_KEY: Optional[str] = os.getenv("FIREBASE_API_KEY")
+    FIREBASE_PROJECT_ID: Optional[str] = os.getenv("FIREBASE_PROJECT_ID")
+    FIREBASE_PRIVATE_KEY_ID: Optional[str] = os.getenv("FIREBASE_PRIVATE_KEY_ID")
+    FIREBASE_PRIVATE_KEY: Optional[str] = os.getenv("FIREBASE_PRIVATE_KEY")
+    FIREBASE_CLIENT_EMAIL: Optional[str] = os.getenv("FIREBASE_CLIENT_EMAIL")
+    FIREBASE_CLIENT_ID: Optional[str] = os.getenv("FIREBASE_CLIENT_ID")
+    FIREBASE_CLIENT_X509_CERT_URL: Optional[str] = os.getenv("FIREBASE_CLIENT_X509_CERT_URL")
+    
     @property
     def database_url(self) -> str:
         # Use DATABASE_URL if provided, otherwise construct from components
@@ -66,6 +75,11 @@ class Settings(BaseSettings):
     def has_supabase_storage(self) -> bool:
         """Check if Supabase storage is properly configured"""
         return bool(self.SUPABASE_URL and self.SUPABASE_SERVICE_ROLE_KEY and self.SUPABASE_STORAGE_BUCKET)
+    
+    @property
+    def has_firebase_config(self) -> bool:
+        """Check if Firebase is properly configured"""
+        return bool(self.FIREBASE_API_KEY and self.FIREBASE_PROJECT_ID)
     
     class Config:
         env_file = get_env_file()

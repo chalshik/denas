@@ -8,9 +8,11 @@ import { api } from '@/lib/api';
 interface User {
   id: number;
   firebase_uid: string;
+  firebase_uid: string;
   phone: string;
   role: string;
   created_at: string;
+  updated_at: string;
   updated_at: string;
 }
 
@@ -20,6 +22,8 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   refreshUser: () => Promise<void>;
+  signOut: () => Promise<void>;
+  initializeSession: (firebaseUser: FirebaseUser) => Promise<void>;
   signOut: () => Promise<void>;
   initializeSession: (firebaseUser: FirebaseUser) => Promise<void>;
 }
@@ -96,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Sign out from Firebase
       await signOut(auth);
       
+      
       setUser(null);
       setFirebaseUser(null);
       setError(null);
@@ -139,11 +144,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!user) {
             await initializeSession(firebaseUser);
           }
+          // Check if we already have a session
+          await checkExistingSession();
+          
+          // If no session, initialize one
+          if (!user) {
+            await initializeSession(firebaseUser);
+          }
         } catch (err) {
+          console.error('Error during Firebase auth state change:', err);
+          setError('Authentication error occurred');
           console.error('Error during Firebase auth state change:', err);
           setError('Authentication error occurred');
         }
       } else {
+        // No Firebase user, but check for existing session
+        await checkExistingSession();
         // No Firebase user, but check for existing session
         await checkExistingSession();
       }
