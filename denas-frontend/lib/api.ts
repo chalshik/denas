@@ -114,6 +114,43 @@ class ApiClient {
     });
   }
 
+  // Authentication methods
+  async registerUser(phone: string): Promise<any> {
+    return this.post('/auth/register', { phone });
+  }
+
+  async getCurrentUser(): Promise<any> {
+    return this.get('/auth/me');
+  }
+
+  async getCurrentUserFromCookie(): Promise<any> {
+    try {
+      return await this.get('/auth/me-from-cookie');
+    } catch {
+      return null;
+    }
+  }
+
+  async setAuthCookies(idToken: string, refreshToken: string): Promise<any> {
+    return this.post('/auth/set-cookies', { idToken, refreshToken });
+  }
+
+  async logout(): Promise<any> {
+    return this.post('/auth/logout');
+  }
+
+  async checkSession(): Promise<{ authenticated: boolean; user?: any }> {
+    try {
+      return await this.get('/auth/session');
+    } catch {
+      return { authenticated: false };
+    }
+  }
+
+  async refreshAuthToken(): Promise<any> {
+    return this.post('/auth/refresh');
+  }
+
   // Upload methods
   async uploadFile(file: File, folder: string = 'uploads'): Promise<{success: boolean, file_url: string}> {
     const formData = new FormData();
@@ -180,6 +217,9 @@ class ApiClient {
 
 // Create and export API instance
 export const api = new ApiClient();
+
+// Export the class as default for backward compatibility
+export default ApiClient;
 
 // Legacy BaseService for backward compatibility
 export class BaseService {
@@ -312,4 +352,4 @@ export class BaseService {
     
     return response.json();
   }
-} 
+}
