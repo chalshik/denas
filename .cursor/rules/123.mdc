@@ -24,4 +24,46 @@ General rules:
 - Write clear docstrings (Python) and JSDoc (JS/TS) for all exported functions.
 - When unsure, prefer readability and simplicity over cleverness.
 
+├── app/
+│   ├── layout.tsx
+│   ├── page.tsx                     # Главная страница
+│   ├── (auth)/                      # Группа для логина/регистрации
+│   │   ├── login/page.tsx
+│   │   ├── register/page.tsx
+│   ├── (shop)/                      # Группа публичных страниц
+│   │   ├── products/
+│   │   │   ├── [id]/page.tsx        # Детали товара
+│   │   │   └── page.tsx             # Каталог товаров
+│   │   ├── wishlist/page.tsx
+│   │   ├── checkout/page.tsx
+│   ├── (account)/                  # Личный кабинет пользователя
+│   │   ├── orders/page.tsx
+│   │   ├── profile/page.tsx
+│   ├── (admin)/                    # Админ-панель
+│   │   ├── layout.tsx              # Сайдбар админки
+│   │   ├── products/page.tsx
+│   │   ├── chats/page.tsx
+│   │   ├── analytics/page.tsx
+│   │   └── settings/page.tsx
+│
+├── components/
+│   ├── layout/                     # Навбар, футер, сайдбар
+│   ├── product/                    # Карточка товара, фильтры и т.п.
+│   ├── wishlist/                       # Элементы корзины
+│   └── forms/                      # Формы логина, регистрации и т.п.
+│
+├── lib/                            # Утилиты
+│   ├── auth.ts                     # Аутентификация (getSession и т.п.)
+│   ├── db.ts                       # Подключение к БД (Supabase)
+│   ├── stripe.ts                   # Stripe utils
+│   └── fetcher.ts                  # SWR/React Query fetcher
+│
+├── public/                         # Статичные изображения
+│
+├── styles/                         # Tailwind config, globals.css
+│
+├── middleware.ts                   # Middleware для auth route guards
+├── next.config.js
+└── tsconfig.json
+
 

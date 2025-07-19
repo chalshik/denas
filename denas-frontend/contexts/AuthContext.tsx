@@ -3,14 +3,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import ApiClient from '@/lib/api';
+import { api } from '@/lib/api';
 
 interface User {
   id: number;
   firebase_uid: string;
+  firebase_uid: string;
   phone: string;
   role: string;
   created_at: string;
+  updated_at: string;
   updated_at: string;
 }
 
@@ -20,6 +22,8 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   refreshUser: () => Promise<void>;
+  signOut: () => Promise<void>;
+  initializeSession: (firebaseUser: FirebaseUser) => Promise<void>;
   signOut: () => Promise<void>;
   initializeSession: (firebaseUser: FirebaseUser) => Promise<void>;
 }
@@ -45,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       
       // Try to get user from cookie session first
-      const cookieUser = await ApiClient.getCurrentUserFromCookie();
+      const cookieUser = await api.getCurrentUserFromCookie();
       if (cookieUser) {
         setUser(cookieUser);
         return;
@@ -53,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Fallback to Firebase token-based authentication
       if (firebaseUser) {
-        const backendUser = await ApiClient.getCurrentUser() as User;
+        const backendUser = await api.getCurrentUser() as User;
         setUser(backendUser);
       }
     } catch (err) {
@@ -73,12 +77,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (refreshToken) {
         // Set cookies for session management
-        await ApiClient.setAuthCookies(idToken, refreshToken);
+        await api.setAuthCookies(idToken, refreshToken);
         console.log('Session cookies set successfully');
       }
       
       // Get user from backend
-      const backendUser = await ApiClient.getCurrentUser() as User;
+      const backendUser = await api.getCurrentUser() as User;
       setUser(backendUser);
       
     } catch (err) {
@@ -91,10 +95,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleSignOut = async () => {
     try {
       // Clear cookies on the server
-      await ApiClient.logout();
+      await api.logout();
       
       // Sign out from Firebase
       await signOut(auth);
+      
       
       setUser(null);
       setFirebaseUser(null);
@@ -110,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       
       // Check if we have a valid session
-      const sessionResponse = await ApiClient.checkSession();
+      const sessionResponse = await api.checkSession();
       
       if (sessionResponse.authenticated && sessionResponse.user) {
         setUser(sessionResponse.user);
@@ -139,11 +144,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!user) {
             await initializeSession(firebaseUser);
           }
+          // Check if we already have a session
+          await checkExistingSession();
+          
+          // If no session, initialize one
+          if (!user) {
+            await initializeSession(firebaseUser);
+          }
         } catch (err) {
+          console.error('Error during Firebase auth state change:', err);
+          setError('Authentication error occurred');
           console.error('Error during Firebase auth state change:', err);
           setError('Authentication error occurred');
         }
       } else {
+        // No Firebase user, but check for existing session
+        await checkExistingSession();
         // No Firebase user, but check for existing session
         await checkExistingSession();
       }
@@ -169,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refreshInterval = setInterval(async () => {
       if (user) {
         try {
-          await ApiClient.refreshAuthToken();
+          await api.refreshAuthToken();
           console.log('Token refreshed automatically');
         } catch (err) {
           console.error('Auto token refresh failed:', err);
@@ -199,4 +215,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export default AuthProvider; 
+export default AuthProvider;

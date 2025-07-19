@@ -1,9 +1,7 @@
 from .user import User, UserCreate, UserUpdate, UserInDB, UserWithDetails, UserRole
 from .product import (
-    Product, ProductCreateRequest, ProductUpdate, ProductInDB, 
-    ProductWithImages, ProductWithCategory, ProductWithDetails, ProductResponse, 
-    CategoryResponse, ProductImageResponse, AvailabilityType,
-    ProductCatalog, ProductResponseSpecific, CategoryCatalog, ProductImageCatalog
+    Product, ProductCreate, ProductUpdate, ProductInDB, 
+    ProductWithDetails, ProductCatalog, ProductListResponse, ProductResponse, AvailabilityType
 )
 from .category import Category, CategoryCreate, CategoryUpdate, CategoryInDB, CategoryWithProducts
 from .product_image import ProductImage, ProductImageCreate, ProductImageUpdate, ProductImageInDB, ImageType
@@ -25,10 +23,8 @@ __all__ = [
     # User schemas
     "User", "UserCreate", "UserUpdate", "UserInDB", "UserWithDetails", "UserRole",
     # Product schemas
-    "Product", "ProductCreateRequest", "ProductUpdate", "ProductInDB", 
-    "ProductWithImages", "ProductWithCategory", "ProductWithDetails", "ProductResponse",
-    "CategoryResponse", "ProductImageResponse", "AvailabilityType",
-    "ProductCatalog", "ProductResponseSpecific", "CategoryCatalog", "ProductImageCatalog",
+    "Product", "ProductCreate", "ProductUpdate", "ProductInDB", 
+    "ProductWithDetails", "ProductCatalog", "ProductListResponse", "ProductResponse", "AvailabilityType",
     # Category schemas
     "Category", "CategoryCreate", "CategoryUpdate", "CategoryInDB", "CategoryWithProducts",
     # Product Image schemas

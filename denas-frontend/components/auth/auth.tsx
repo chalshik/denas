@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import ApiClient from '@/lib/api';
+import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardBody, CardHeader, Input, Button, Spinner, Link } from '@heroui/react';
 
@@ -17,6 +17,7 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const { refreshUser, initializeSession } = useAuth();
   const { refreshUser, initializeSession } = useAuth();
 
   const validateForm = () => {
@@ -52,9 +53,10 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
       if (isSignUp) {
         // Sign up new user
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         
         // Register user in backend
-        await ApiClient.registerUser(phoneNumber);
+        await api.registerUser(phoneNumber);
         
         // Initialize session with cookies
         await initializeSession(userCredential.user);
@@ -67,7 +69,12 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
         
         // Initialize session with cookies
         await initializeSession(userCredential.user);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         
+        // Initialize session with cookies
+        await initializeSession(userCredential.user);
+        
+        console.log('User signed in and session initialized successfully');
         console.log('User signed in and session initialized successfully');
         onSuccess?.();
       }
@@ -84,6 +91,8 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
         onError?.('Password is too weak.');
       } else if (error.message?.includes('Failed to set authentication cookies')) {
         onError?.('Authentication successful but session setup failed. Please try again.');
+      } else if (error.message?.includes('Failed to set authentication cookies')) {
+        onError?.('Authentication successful but session setup failed. Please try again.');
       } else {
         onError?.(error.message || 'Authentication failed');
       }
@@ -98,6 +107,12 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
         <h2 className="text-xl font-bold text-center w-full text-gray-800">
           {isSignUp ? 'Sign Up' : 'Sign In'}
         </h2>
+        <p className="text-sm text-gray-600 text-center w-full mt-2">
+          {isSignUp 
+            ? 'Create a new account to get started' 
+            : 'Welcome back! Please sign in to your account'
+          }
+        </p>
         <p className="text-sm text-gray-600 text-center w-full mt-2">
           {isSignUp 
             ? 'Create a new account to get started' 
@@ -149,6 +164,7 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
             spinner={<Spinner color="white" size="sm" />}
           >
             {isSignUp ? 'Create Account' : 'Sign In'}
+            {isSignUp ? 'Create Account' : 'Sign In'}
           </Button>
         </form>
         
@@ -167,9 +183,15 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({ onSuccess, onError }) => {
             Your session will be automatically maintained across browser refreshes
           </p>
         </div>
+        
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
+            Your session will be automatically maintained across browser refreshes
+          </p>
+        </div>
       </CardBody>
     </Card>
   );
 };
 
-export default PhoneAuth; 
+export default PhoneAuth;

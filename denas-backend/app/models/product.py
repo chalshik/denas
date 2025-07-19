@@ -7,9 +7,12 @@ from datetime import datetime
 from app.db.base import Base
 
 class AvailabilityType(enum.Enum):
-    IN_STOCK = "in_stock"
-    PRE_ORDER = "pre_order"
-    DISCONTINUED = "discontinued"
+    IN_STOCK = "IN_STOCK"
+    PRE_ORDER = "PRE_ORDER"
+    DISCONTINUED = "DISCONTINUED"
+    
+    def __str__(self):
+        return self.value
 
 class Product(Base):
     __tablename__ = "products"
@@ -19,7 +22,7 @@ class Product(Base):
     description = Column(Text)
     price = Column(DECIMAL(10, 2), nullable=False)
     stock_quantity = Column(Integer, default=0)
-    availability_type = Column(Enum(AvailabilityType), default=AvailabilityType.IN_STOCK)
+    availability_type = Column(String(20), default="IN_STOCK")
     preorder_available_date = Column(TIMESTAMP, nullable=True)
     is_active = Column(Boolean, default=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, index=True)

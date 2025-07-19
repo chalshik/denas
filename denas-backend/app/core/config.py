@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     @property
     def has_supabase_storage(self) -> bool:
         """Check if Supabase storage is properly configured"""
-        return bool(self.SUPABASE_URL and self.SUPABASE_KEY and self.SUPABASE_STORAGE_BUCKET)
+        return bool(self.SUPABASE_URL and self.SUPABASE_SERVICE_ROLE_KEY and self.SUPABASE_STORAGE_BUCKET)
     
     @property
     def has_firebase_config(self) -> bool:

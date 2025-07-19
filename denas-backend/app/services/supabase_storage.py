@@ -13,14 +13,25 @@ class SupabaseStorageService:
     """Service for handling file uploads to Supabase Storage"""
     
     def __init__(self):
+        logger.info(f"Initializing Supabase Storage Service")
+        logger.info(f"SUPABASE_URL: {settings.SUPABASE_URL}")
+        logger.info(f"SUPABASE_SERVICE_ROLE_KEY: {'***' if settings.SUPABASE_SERVICE_ROLE_KEY else 'None'}")
+        logger.info(f"SUPABASE_STORAGE_BUCKET: {settings.SUPABASE_STORAGE_BUCKET}")
+        logger.info(f"has_supabase_storage: {settings.has_supabase_storage}")
+        
         if not settings.has_supabase_storage:
             raise ValueError("Supabase storage is not properly configured")
         
-        self.supabase: Client = create_client(
-            settings.SUPABASE_URL, 
-            settings.SUPABASE_SERVICE_ROLE_KEY
-        )
-        self.bucket_name = settings.SUPABASE_STORAGE_BUCKET
+        try:
+            self.supabase: Client = create_client(
+                settings.SUPABASE_URL, 
+                settings.SUPABASE_SERVICE_ROLE_KEY
+            )
+            self.bucket_name = settings.SUPABASE_STORAGE_BUCKET
+            logger.info(f"Supabase client created successfully")
+        except Exception as e:
+            logger.error(f"Failed to create Supabase client: {str(e)}")
+            raise
         
     async def upload_file(
         self, 
@@ -51,35 +62,64 @@ class SupabaseStorageService:
                 )
             
             # Generate unique filename
-            file_extension = file.filename.split('.')[-1] if '.' in file.filename else ''
+            file_extension = file.filename.split('.')[-1] if file.filename and '.' in file.filename else ''
             unique_filename = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
-            file_path = f"{folder}/{unique_filename}"
+            # Don't add folder prefix if it's already the bucket name
+            if folder == self.bucket_name:
+                file_path = unique_filename
+            else:
+                file_path = f"{folder}/{unique_filename}"
             
             # Read file content
             file_content = await file.read()
             
-            # Upload to Supabase Storage
-            result = self.supabase.storage.from_(self.bucket_name).upload(
-                file_path,
-                file_content,
-                file_options={
-                    "content-type": file.content_type,
-                    "upsert": "false"
-                }
-            )
+            # Reset file position for potential re-reading
+            try:
+                await file.seek(0)
+            except:
+                # If seek fails, it's okay, we already have the content
+                pass
             
-            if result.status_code != 200:
-                logger.error(f"Upload failed: {result}")
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to upload file to storage"
+            try:
+                # Upload to Supabase Storage
+                result = self.supabase.storage.from_(self.bucket_name).upload(
+                    file_path,
+                    file_content,
+                    file_options={
+                        "content-type": file.content_type or "application/octet-stream",
+                        "upsert": "false"
+                    }
                 )
-            
-            # Get public URL
-            public_url = self.supabase.storage.from_(self.bucket_name).get_public_url(file_path)
-            
-            logger.info(f"File uploaded successfully: {file_path}")
-            return public_url
+                
+                logger.info(f"Upload result: {result}")
+                
+                # Get public URL
+                public_url = self.supabase.storage.from_(self.bucket_name).get_public_url(file_path)
+                
+                logger.info(f"File uploaded successfully: {file_path} -> {public_url}")
+                return public_url
+                
+            except Exception as upload_error:
+                logger.error(f"Supabase upload error: {str(upload_error)}")
+                # Try with different approach
+                try:
+                    # Alternative upload method
+                    result = self.supabase.storage.from_(self.bucket_name).upload(
+                        path=file_path,
+                        file=file_content,
+                        file_options={"content-type": file.content_type or "application/octet-stream"}
+                    )
+                    
+                    public_url = self.supabase.storage.from_(self.bucket_name).get_public_url(file_path)
+                    logger.info(f"File uploaded successfully (alternative method): {file_path} -> {public_url}")
+                    return public_url
+                    
+                except Exception as alt_error:
+                    logger.error(f"Alternative upload also failed: {str(alt_error)}")
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to upload file to storage: {str(alt_error)}"
+                    )
             
         except HTTPException:
             raise
@@ -87,7 +127,7 @@ class SupabaseStorageService:
             logger.error(f"Upload error: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Failed to upload file"
+                detail=f"Failed to upload file: {str(e)}"
             )
     
     async def upload_multiple_files(
