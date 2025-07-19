@@ -268,5 +268,5 @@ class ProductService:
         """Get featured products (latest or most popular)"""
         return db.query(Product).filter(
             Product.is_active == True,
-            Product.availability_type == "IN_STOCK"
+            Product.availability_type == AvailabilityType.IN_STOCK.value
         ).order_by(desc(Product.created_at)).limit(limit).all()

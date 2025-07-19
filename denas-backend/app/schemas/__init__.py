@@ -19,6 +19,10 @@ from .shopping_cart_item import (
 from .payment import Payment, PaymentCreate, PaymentUpdate, PaymentInDB, PaymentWithOrder, PaymentStatus
 from .favorite import Favorite, FavoriteCreate, FavoriteUpdate, FavoriteInDB, FavoriteWithProduct, FavoriteWithUser
 
+# Rebuild models to resolve forward references
+ProductWithDetails.model_rebuild()
+CategoryWithProducts.model_rebuild()
+
 __all__ = [
     # User schemas
     "User", "UserCreate", "UserUpdate", "UserInDB", "UserWithDetails", "UserRole",
@@ -27,21 +31,21 @@ __all__ = [
     "ProductWithDetails", "ProductCatalog", "ProductListResponse", "ProductResponse", "AvailabilityType",
     # Category schemas
     "Category", "CategoryCreate", "CategoryUpdate", "CategoryInDB", "CategoryWithProducts",
-    # Product Image schemas
+    # Product image schemas
     "ProductImage", "ProductImageCreate", "ProductImageUpdate", "ProductImageInDB", "ImageType",
     # Order schemas
     "Order", "OrderCreate", "OrderUpdate", "OrderInDB", "OrderWithItems", "OrderWithUser", "OrderStatus",
-    # Order Item schemas
+    # Order item schemas
     "OrderItem", "OrderItemCreate", "OrderItemUpdate", "OrderItemInDB", "OrderItemWithProduct", "OrderItemWithOrder",
-    # Shopping Cart schemas
+    # Shopping cart schemas
     "ShoppingCart", "ShoppingCartCreate", "ShoppingCartUpdate", "ShoppingCartInDB", 
     "ShoppingCartResponse", "ShoppingCartSummary", "ShoppingCartItemResponse",
     "CartActionResponse", "CartClearResponse",
-    # Shopping Cart Item schemas
+    # Shopping cart item schemas
     "ShoppingCartItem", "ShoppingCartItemCreate", "ShoppingCartItemUpdate", 
     "ShoppingCartItemInDB", "ShoppingCartItemWithProduct",
     # Payment schemas
     "Payment", "PaymentCreate", "PaymentUpdate", "PaymentInDB", "PaymentWithOrder", "PaymentStatus",
     # Favorite schemas
-    "Favorite", "FavoriteCreate", "FavoriteUpdate", "FavoriteInDB", "FavoriteWithProduct", "FavoriteWithUser"
+    "Favorite", "FavoriteCreate", "FavoriteUpdate", "FavoriteInDB", "FavoriteWithProduct", "FavoriteWithUser",
 ] 

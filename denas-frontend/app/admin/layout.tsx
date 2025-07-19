@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { 
   ShoppingBagIcon, 
@@ -27,9 +27,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 }
 
 function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
   const menuItems = [
+    {
+      name: 'Dashboard',
+      href: '/admin',
+      icon: ChartBarIcon,
+    },
     {
       name: 'Products',
       href: '/admin/products',
@@ -51,15 +56,17 @@ function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
       icon: Cog6ToothIcon,
     },
   ];
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
+      <div className="w-64 bg-white shadow-lg flex flex-col">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
-          <p className="text-sm text-gray-600 mt-1">Welcome, {user?.email}</p>
+          <p className="text-sm text-gray-600 mt-1">Welcome, {user?.phone}</p>
+          <div className="text-xs text-gray-500 mt-1">Role: {user?.role}</div>
         </div>
-        <nav className="mt-6">
+        <nav className="mt-6 flex-1">
           <div className="px-4 space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -76,20 +83,19 @@ function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
             })}
           </div>
         </nav>
-        <div className="absolute bottom-4 left-4">
+        <div className="p-4 mt-auto">
           <Button
             color="danger"
-            isIconOnly
-            radius="full"
+            variant="bordered"
             size="sm"
-            className="shadow-md"
-            title="Sign Out"
+            className="w-full"
+            startContent={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
             onPress={async () => {
-              await logout();
+              await signOut();
               router.push('/');
             }}
           >
-            <ArrowRightOnRectangleIcon className="w-5 h-5" />
+            Sign Out
           </Button>
         </div>
       </div>

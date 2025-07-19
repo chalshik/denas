@@ -6,9 +6,9 @@ import enum
 
 
 class AvailabilityType(enum.Enum):
-    IN_STOCK = "in_stock"
-    PRE_ORDER = "pre_order"
-    DISCONTINUED = "discontinued"
+    IN_STOCK = "IN_STOCK"
+    PRE_ORDER = "PRE_ORDER"
+    DISCONTINUED = "DISCONTINUED"
 
 
 class ProductBase(BaseModel):
@@ -100,10 +100,3 @@ class ProductListResponse(BaseModel):
     size: int
     has_next: bool
     has_previous: bool
-
-
-# Avoid circular import by using forward reference
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from app.schemas.category import Category
-    from app.schemas.product_image import ProductImage

@@ -8,13 +8,15 @@ import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Form } from '@heroui/form';
 import { useForm } from '@/hooks/useForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 interface RegisterFormProps {
   onSwitchToLogin?: () => void;
 }
 
 export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
-  const { form, setForm, handleInput } = useForm({
+  const { form, setForm } = useForm({
     phoneNumber: '',
     password: '',
     confirmPassword: '',
@@ -22,113 +24,159 @@ export default function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { initializeSession } = useAuth();
 
-  const getPasswordError = (value: string) => {
-    if (value.length < 6) {
-      return "Password must be at least 6 characters";
-    }
-    if (!/(?=.*[A-Z])/.test(value)) {
-      return "Password needs at least 1 uppercase letter";
-    }
-    if (!/(?=.*[0-9])/.test(value)) {
-      return "Password needs at least 1 number";
-    }
-    return null;
+  // Convert phone number to email format for Firebase
+  const phoneToEmail = (phone: string): string => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    return `${cleanPhone}@phone.auth`;
   };
 
-  const handlePasswordRegistration = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    
+    if (!form.phoneNumber.trim() || !form.password.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
-      setIsLoading(false);
       return;
     }
-    const passwordError = getPasswordError(form.password);
-    if (passwordError) {
-      setError(passwordError);
-      setIsLoading(false);
+
+    // Simple password validation - just minimum length
+    if (form.password.length < 3) {
+      setError('Password must be at least 3 characters');
       return;
     }
+
+    setIsLoading(true);
+    setError('');
+    
     try {
-      const email = `${form.phoneNumber}@phone.com`;
+      const email = phoneToEmail(form.phoneNumber);
+      
+      // Create Firebase user
       const userCredential = await createUserWithEmailAndPassword(auth, email, form.password);
-      const idToken = await userCredential.user.getIdToken();
-      const backendUser = await import('@/lib/auth').then(m => m.registerUserBackend(idToken, form.phoneNumber));
-      localStorage.setItem('userRole', backendUser.role?.toLowerCase?.() || 'user');
-      if (backendUser.role === 'Admin') {
-        router.push('/admin/products');
+      
+      // Register user in backend database
+      await api.registerUser(form.phoneNumber);
+      
+      // Initialize session with backend (cookies + user data)
+      await initializeSession(userCredential.user);
+      
+      // Get the user data to check role and redirect appropriately
+      const userData = await api.getCurrentUser();
+      
+      console.log('User registered successfully, role:', userData.role);
+      
+      // Redirect based on user role
+      if (userData.role === 'Admin') {
+        console.log('Redirecting admin to admin panel');
+        router.push('/admin');
       } else {
+        console.log('Redirecting user to dashboard');
         router.push('/');
       }
+      
     } catch (error: any) {
-      setError(error.message || 'Registration failed');
+      console.error('Registration error:', error);
+      
+      if (error.code === 'auth/email-already-in-use') {
+        setError('Phone number is already registered. Please sign in instead.');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Password is too weak.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Invalid phone number format.');
+      } else if (error.message?.includes('already exists')) {
+        setError('Phone number is already registered. Please sign in instead.');
+      } else {
+        setError(error.message || 'Registration failed');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const onSubmit = (e: React.FormEvent) => {
-    handlePasswordRegistration(e);
-  };
-
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center min-h-[60vh]">
-      <Form
-        className="w-full space-y-6"
-        onSubmit={onSubmit}
-      >
-        <div className="space-y-6">
-          <Input
-            label="Phone Number"
-            labelPlacement="outside"
-            classNames={{ label: 'mb-2' }}
-            placeholder="Enter your phone"
-            value={form.phoneNumber}
-            onValueChange={val => setForm(f => ({ ...f, phoneNumber: val }))}
-            isInvalid={!!error}
-            errorMessage={error || undefined}
-          />
-          <Input
-            label="Password"
-            labelPlacement="outside"
-            classNames={{ label: 'mb-2' }}
-            placeholder="Enter your password"
-            type="password"
-            value={form.password}
-            onValueChange={val => setForm(f => ({ ...f, password: val }))}
-            isInvalid={!!getPasswordError(form.password) && form.password.length > 0}
-            errorMessage={form.password.length > 0 ? getPasswordError(form.password) : undefined}
-          />
-          <Input
-            label="Confirm Password"
-            labelPlacement="outside"
-            classNames={{ label: 'mb-2' }}
-            placeholder="Confirm your password"
-            type="password"
-            value={form.confirmPassword}
-            onValueChange={val => setForm(f => ({ ...f, confirmPassword: val }))}
-            isInvalid={form.password !== form.confirmPassword && form.confirmPassword.length > 0}
-            errorMessage={form.password !== form.confirmPassword && form.confirmPassword.length > 0 ? 'Passwords do not match' : undefined}
-          />
-          <Button
-            type="submit"
-            color="primary"
-            className="w-full"
-            isLoading={isLoading}
-          >
-            Register
-          </Button>
+    <div className="w-full max-w-md mx-auto">
+      <Form className="w-full space-y-6" onSubmit={handleSubmit}>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+        
+        <Input
+          label="Phone Number"
+          labelPlacement="outside"
+          placeholder="Enter your phone number"
+          value={form.phoneNumber}
+          onValueChange={val => setForm(f => ({ ...f, phoneNumber: val }))}
+          isRequired
+          variant="bordered"
+          classNames={{
+            label: "text-gray-700 font-medium mb-2",
+            input: "text-gray-900",
+            inputWrapper: "border-gray-300"
+          }}
+        />
+        
+        <Input
+          label="Password"
+          labelPlacement="outside"
+          placeholder="Enter any password (min 3 characters)"
+          type="password"
+          value={form.password}
+          onValueChange={val => setForm(f => ({ ...f, password: val }))}
+          isRequired
+          variant="bordered"
+          classNames={{
+            label: "text-gray-700 font-medium mb-2",
+            input: "text-gray-900",
+            inputWrapper: "border-gray-300"
+          }}
+        />
+        
+        <Input
+          label="Confirm Password"
+          labelPlacement="outside"
+          placeholder="Confirm your password"
+          type="password"
+          value={form.confirmPassword}
+          onValueChange={val => setForm(f => ({ ...f, confirmPassword: val }))}
+          isRequired
+          variant="bordered"
+          isInvalid={form.password !== form.confirmPassword && form.confirmPassword.length > 0}
+          errorMessage={form.password !== form.confirmPassword && form.confirmPassword.length > 0 ? 'Passwords do not match' : undefined}
+          classNames={{
+            label: "text-gray-700 font-medium mb-2",
+            input: "text-gray-900",
+            inputWrapper: "border-gray-300"
+          }}
+        />
+        
+        <Button
+          type="submit"
+          color="primary"
+          className="w-full"
+          isLoading={isLoading}
+          size="lg"
+        >
+          Create Account
+        </Button>
+        
+        {onSwitchToLogin && (
           <Button
             type="button"
-            variant="bordered"
+            variant="light"
             className="w-full"
             onPress={onSwitchToLogin}
           >
-            Already have an account? Login
+            Already have an account? Sign In
           </Button>
-        </div>
+        )}
       </Form>
     </div>
   );

@@ -95,6 +95,19 @@ export interface ProductCreate {
   is_active?: boolean;
 }
 
+export interface ProductUpdate {
+  name?: string;
+  description?: string;
+  price?: number;
+  category_id?: number;
+  image_urls?: string[];
+  images?: File[]; // Для загрузки новых изображений
+  stock_quantity?: number;
+  availability_type?: AvailabilityType;
+  preorder_available_date?: string;
+  is_active?: boolean;
+}
+
 export interface CategoryCreate {
   name: string;
 }

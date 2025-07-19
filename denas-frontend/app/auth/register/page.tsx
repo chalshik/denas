@@ -20,7 +20,7 @@ export default function RegisterPage() {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your phone number and password to register
+            Enter your phone number and any password (minimum 3 characters)
           </p>
         </div>
         

@@ -1,21 +1,31 @@
-import { BaseService } from '../api';
+import { api } from '../api';
 import { Category, CategoryCreate, CategoryWithProducts } from '../../types';
 
-class CategoryService extends BaseService {
-  constructor() {
-    super('/categories');
+class CategoryService {
+  private basePath = '/categories';
+
+  async list(): Promise<Category[]> {
+    return api.get<Category[]>(this.basePath);
+  }
+
+  async getById(id: number): Promise<Category> {
+    return api.get<Category>(`${this.basePath}/${id}`);
+  }
+
+  async create(data: CategoryCreate): Promise<Category> {
+    return api.post<Category>(this.basePath, data);
+  }
+
+  async update(id: number, data: Partial<CategoryCreate>): Promise<Category> {
+    return api.put<Category>(`${this.basePath}/${id}`, data);
+  }
+
+  async delete(id: number): Promise<void> {
+    return api.delete<void>(`${this.basePath}/${id}`);
   }
 
   async getWithProducts(id: number): Promise<CategoryWithProducts> {
-    const response = await fetch(`${this.baseUrl}/${id}/products`, {
-      headers: await this.getHeaders(),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch category with products: ${response.statusText}`);
-    }
-    
-    return response.json();
+    return api.get<CategoryWithProducts>(`${this.basePath}/${id}/products`);
   }
 }
 

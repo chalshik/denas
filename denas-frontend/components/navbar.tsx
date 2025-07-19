@@ -6,11 +6,11 @@ import { Navbar as HeroNavbar, NavbarBrand, NavbarContent, NavbarItem, NavbarMen
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
 import { siteConfig } from '@/config/site';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const { user, isAdmin, logout } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const router = useRouter();
 
   const menuItems = [
@@ -18,6 +18,8 @@ export function Navbar() {
     { name: "Products", href: "/shop" },
     { name: "About", href: "/about" },
   ];
+
+  const isAdmin = user?.role === 'admin';
 
   return (
     <HeroNavbar onMenuOpenChange={setIsMenuOpen} className="bg-background/60 backdrop-blur-md">
@@ -48,8 +50,13 @@ export function Navbar() {
       </NavbarContent>
 
       <NavbarContent justify="end">
-        {user ? (
+        {!loading && user ? (
           <>
+            <NavbarItem className="hidden sm:flex">
+              <span className="text-sm text-gray-600">
+                {user.phone}
+              </span>
+            </NavbarItem>
             {isAdmin && (
               <NavbarItem>
                 <Button
@@ -67,7 +74,7 @@ export function Navbar() {
                 color="danger"
                 variant="bordered"
                 onPress={async () => {
-                  await logout();
+                  await signOut();
                   router.push('/');
                 }}
               >
@@ -75,7 +82,7 @@ export function Navbar() {
               </Button>
             </NavbarItem>
           </>
-        ) : (
+        ) : !loading ? (
           <>
             <NavbarItem className="hidden sm:flex">
               <Button
@@ -98,7 +105,7 @@ export function Navbar() {
               </Button>
             </NavbarItem>
           </>
-        )}
+        ) : null}
       </NavbarContent>
 
       <NavbarMenu>
@@ -114,8 +121,13 @@ export function Navbar() {
             </Link>
           </NavbarMenuItem>
         ))}
-        {user ? (
+        {!loading && user ? (
           <>
+            <NavbarMenuItem>
+              <div className="p-4 text-sm text-gray-600">
+                Logged in as: {user.phone}
+              </div>
+            </NavbarMenuItem>
             {isAdmin && (
               <NavbarMenuItem>
                 <Button
@@ -135,7 +147,7 @@ export function Navbar() {
                 variant="bordered"
                 className="w-full"
                 onPress={async () => {
-                  await logout();
+                  await signOut();
                   router.push('/');
                 }}
               >
@@ -143,7 +155,7 @@ export function Navbar() {
               </Button>
             </NavbarMenuItem>
           </>
-        ) : (
+        ) : !loading ? (
           <>
             <NavbarMenuItem>
               <Button
@@ -168,7 +180,7 @@ export function Navbar() {
               </Button>
             </NavbarMenuItem>
           </>
-        )}
+        ) : null}
       </NavbarMenu>
     </HeroNavbar>
   );

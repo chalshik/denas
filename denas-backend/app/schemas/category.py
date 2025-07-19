@@ -32,9 +32,3 @@ class CategoryWithProducts(CategoryInDB):
 
     class Config:
         from_attributes = True
-
-
-# Avoid circular import by using forward reference
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from app.schemas.product import Product

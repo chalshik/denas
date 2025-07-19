@@ -1,6 +1,6 @@
 import { useApi } from "./useApi";
 import { api } from "../lib/api";
-import { Product, ProductCreate, ProductCatalog, ProductWithDetails, ProductListResponse, ProductFilters } from "../types";
+import { Product, ProductCreate, ProductUpdate, ProductCatalog, ProductWithDetails, ProductListResponse, ProductFilters } from "../types";
 
 export function useProducts() {
   const apiHook = useApi<ProductCatalog>();
@@ -115,7 +115,7 @@ export function useProducts() {
     }
   };
 
-  const updateProduct = async (id: number, productData: Partial<ProductCreate>): Promise<Product> => {
+  const updateProduct = async (id: number, productData: ProductUpdate): Promise<Product> => {
     apiHook.setLoading(true);
     try {
       let imageUrls: string[] = [];
