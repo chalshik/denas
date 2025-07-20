@@ -15,15 +15,19 @@ import { Switch } from '@heroui/switch';
 import { useForm } from '@/hooks/useForm';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
+import { AvailabilityType } from '@/types';
+import { api } from '@/lib/api';
 
 interface CreateProductModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export default function CreateProductModal({ 
   isOpen, 
-  onClose
+  onClose,
+  onSuccess
 }: CreateProductModalProps) {
   const { createProduct, loading } = useProducts();
   const { categories = [], fetchCategories } = useCategories();
@@ -39,15 +43,16 @@ export default function CreateProductModal({
     preorder_year: '',
     is_active: true,
     category_id: '',
-    images: [] as File[],
   });
 
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const availabilityOptions = [
     { label: 'In Stock', value: 'IN_STOCK' },
     { label: 'Pre-order', value: 'PRE_ORDER' },
-    { label: 'Discontinued', value: 'DISCONTINUED' },
   ];
 
   // Generate days (1-31)
@@ -83,18 +88,123 @@ export default function CreateProductModal({
     fetchCategories();
   }, []);
 
+  const validateAndAddImages = (files: File[]) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    const validFiles = files.filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File ${file.name} is not a valid image type. Only JPEG, PNG, and WebP are allowed.`);
+        return false;
+      }
+      if (file.size > maxSize) {
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    // Check total count after adding new files
+    const totalAfterAdding = selectedImages.length + validFiles.length;
+    if (totalAfterAdding > 5) {
+      const canAdd = 5 - selectedImages.length;
+      if (canAdd > 0) {
+        alert(`You can only add ${canAdd} more images. Total limit is 5 images.`);
+        validFiles.splice(canAdd);
+      } else {
+        alert('Maximum 5 images allowed. Please remove some images first.');
+        return;
+      }
+    }
+
+    // Add new files to existing ones
+    const newImages = [...selectedImages, ...validFiles];
+    setSelectedImages(newImages);
+
+    // Generate previews for new files and add to existing previews
+    Promise.all(validFiles.map(file => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+    })).then(newPreviews => {
+      setImagePreviews(prev => [...prev, ...newPreviews]);
+    });
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files!);
-      setForm(f => ({ ...f, images: files }));
-      // Generate previews
-      Promise.all(files.map(file => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => resolve(ev.target?.result as string);
-          reader.readAsDataURL(file);
-        });
-      })).then(setImagePreviews);
+      const files = Array.from(e.target.files);
+      validateAndAddImages(files);
+      // Reset input value to allow same files to be selected again
+      e.target.value = '';
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const files = Array.from(e.dataTransfer.files);
+      validateAndAddImages(files);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = selectedImages.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    
+    setSelectedImages(newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  const downloadImage = (index: number) => {
+    const file = selectedImages[index];
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const clearAllImages = () => {
+    if (selectedImages.length > 0 && confirm('Are you sure you want to remove all images?')) {
+      setSelectedImages([]);
+      setImagePreviews([]);
+    }
+  };
+
+  const uploadImagesToSupabase = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return [];
+    
+    setUploadingImages(true);
+    try {
+      const response = await api.uploadProductImages(files);
+      return response.image_urls;
+    } catch (error) {
+      console.error('Failed to upload images:', error);
+      throw error;
+    } finally {
+      setUploadingImages(false);
     }
   };
 
@@ -102,6 +212,12 @@ export default function CreateProductModal({
     e.preventDefault();
     
     try {
+      // Upload images first if any selected
+      let imageUrls: string[] = [];
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImagesToSupabase(selectedImages);
+      }
+      
       // Form date from separate fields
       const preorderDate = form.preorder_day && form.preorder_month && form.preorder_year
         ? `${form.preorder_year}-${form.preorder_month.padStart(2, '0')}-${form.preorder_day.padStart(2, '0')}`
@@ -113,23 +229,24 @@ export default function CreateProductModal({
         price: parseFloat(String(form.price)),
         category_id: parseInt(form.category_id) || 0,
         stock_quantity: parseInt(String(form.stock_quantity)) || 0,
-        availability_type: form.availability_type as any,
+        availability_type: form.availability_type as AvailabilityType,
         preorder_available_date: preorderDate,
         is_active: form.is_active,
-        images: form.images
+        image_urls: imageUrls // Send URLs instead of File objects
       };
       
       await createProduct(submitData);
-      resetForm();
-      setImagePreviews([]);
-      onClose();
+      handleClose();
+      onSuccess?.();
     } catch (error) {
       console.error('Failed to create product:', error);
+      alert('Failed to create product. Please try again.');
     }
   };
 
   const handleClose = () => {
     resetForm();
+    setSelectedImages([]);
     setImagePreviews([]);
     onClose();
   };
@@ -201,49 +318,52 @@ export default function CreateProductModal({
                 ))}
               </Select>
               
-              <div>
-                <label className="text-sm font-medium mb-2 block">Preorder Available Date</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Select
-                    placeholder="Day"
-                    selectedKeys={[form.preorder_day]}
-                    onSelectionChange={keys => handleInput({ target: { name: 'preorder_day', value: Array.from(keys)[0] } } as any)}
-                    size="sm"
-                  >
-                    {dayOptions.map(opt => (
-                      <SelectItem key={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                  
-                  <Select
-                    placeholder="Month"
-                    selectedKeys={[form.preorder_month]}
-                    onSelectionChange={keys => handleInput({ target: { name: 'preorder_month', value: Array.from(keys)[0] } } as any)}
-                    size="sm"
-                  >
-                    {monthOptions.map(opt => (
-                      <SelectItem key={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                  
-                  <Select
-                    placeholder="Year"
-                    selectedKeys={[form.preorder_year]}
-                    onSelectionChange={keys => handleInput({ target: { name: 'preorder_year', value: Array.from(keys)[0] } } as any)}
-                    size="sm"
-                  >
-                    {yearOptions.map(opt => (
-                      <SelectItem key={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </Select>
+              {/* Only show preorder date when PRE_ORDER is selected */}
+              {form.availability_type === 'PRE_ORDER' && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Preorder Available Date</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Select
+                      placeholder="Day"
+                      selectedKeys={[form.preorder_day]}
+                      onSelectionChange={keys => handleInput({ target: { name: 'preorder_day', value: Array.from(keys)[0] } } as any)}
+                      size="sm"
+                    >
+                      {dayOptions.map(opt => (
+                        <SelectItem key={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                    
+                    <Select
+                      placeholder="Month"
+                      selectedKeys={[form.preorder_month]}
+                      onSelectionChange={keys => handleInput({ target: { name: 'preorder_month', value: Array.from(keys)[0] } } as any)}
+                      size="sm"
+                    >
+                      {monthOptions.map(opt => (
+                        <SelectItem key={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                    
+                    <Select
+                      placeholder="Year"
+                      selectedKeys={[form.preorder_year]}
+                      onSelectionChange={keys => handleInput({ target: { name: 'preorder_year', value: Array.from(keys)[0] } } as any)}
+                      size="sm"
+                    >
+                      {yearOptions.map(opt => (
+                        <SelectItem key={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
                 </div>
-              </div>
+              )}
               
               <Select
                 name="category_id"
@@ -262,25 +382,145 @@ export default function CreateProductModal({
                 ]}
               </Select>
               
-              <Input 
-                name="images" 
-                label="Product Images"
-                type="file" 
-                multiple 
-                accept="image/*" 
-                onChange={handleImageChange}
-              />
+              <div>
+                <label className="text-sm font-medium mb-3 block">
+                  Product Images ({selectedImages.length}/5)
+                </label>
+                
+                {/* Drag & Drop Upload Zone */}
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    dragActive 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : selectedImages.length >= 5
+                      ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                      : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50 cursor-pointer'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => {
+                    if (selectedImages.length < 5) {
+                      document.getElementById('image-upload-input')?.click();
+                    }
+                  }}
+                >
+                  <Input 
+                    id="image-upload-input"
+                    type="file" 
+                    multiple 
+                    accept="image/jpeg,image/png,image/webp" 
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  
+                  {dragActive ? (
+                    <div className="text-blue-600">
+                      <div className="text-3xl mb-2">📎</div>
+                      <p className="text-lg font-medium">Drop images here</p>
+                    </div>
+                  ) : selectedImages.length >= 5 ? (
+                    <div className="text-gray-400">
+                      <div className="text-3xl mb-2">📸</div>
+                      <p className="text-lg font-medium">Maximum 5 images reached</p>
+                      <p className="text-sm">Remove some images to add more</p>
+                    </div>
+                  ) : (
+                    <div className="text-gray-600">
+                      <div className="text-3xl mb-2">📷</div>
+                      <p className="text-lg font-medium">
+                        Drag & drop images here or click to browse
+                      </p>
+                      <p className="text-sm mt-1">
+                        Supports JPEG, PNG, WebP • Max 10MB per file • Up to 5 images
+                      </p>
+                      <Button
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        className="mt-3"
+                        onPress={() => {
+                          document.getElementById('image-upload-input')?.click();
+                        }}
+                      >
+                        Choose Files
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
               
-              {imagePreviews.length > 0 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {imagePreviews.map((src, i) => (
-                    <img 
-                      key={i} 
-                      src={src} 
-                      alt={`Preview ${i + 1}`}
-                      className="w-full h-20 object-cover rounded"
-                    />
-                  ))}
+              {/* Image Gallery */}
+              {selectedImages.length > 0 && (
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-sm font-medium">
+                      Selected Images ({selectedImages.length})
+                    </label>
+                    <Button
+                      size="sm"
+                      color="danger"
+                      variant="flat"
+                      onPress={clearAllImages}
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {imagePreviews.map((src, i) => (
+                      <div key={i} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
+                          <img 
+                            src={src} 
+                            alt={`Preview ${i + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        
+                        {/* Image Controls Overlay */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              color="primary"
+                              variant="solid"
+                              className="min-w-0 w-10 h-10 p-0"
+                              onPress={() => downloadImage(i)}
+                              title="Download image"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </Button>
+                            <Button
+                              size="sm"
+                              color="danger"
+                              variant="solid"
+                              className="min-w-0 w-10 h-10 p-0"
+                              onPress={() => removeImage(i)}
+                              title="Remove image"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Image Info */}
+                        <div className="mt-2 px-1">
+                          <p className="text-xs text-gray-600 truncate" title={selectedImages[i]?.name}>
+                            {selectedImages[i]?.name}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {(selectedImages[i]?.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               
@@ -303,9 +543,10 @@ export default function CreateProductModal({
             <Button 
               type="submit" 
               color="primary" 
-              isLoading={loading}
+              isLoading={loading || uploadingImages}
+              isDisabled={uploadingImages}
             >
-              Create Product
+              {uploadingImages ? 'Uploading Images...' : 'Create Product'}
             </Button>
           </ModalFooter>
         </form>

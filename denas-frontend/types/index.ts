@@ -15,8 +15,7 @@ export interface Category {
 
 export enum AvailabilityType {
   IN_STOCK = "IN_STOCK",
-  PRE_ORDER = "PRE_ORDER",
-  DISCONTINUED = "DISCONTINUED"
+  PRE_ORDER = "PRE_ORDER"
 }
 
 export interface Product {

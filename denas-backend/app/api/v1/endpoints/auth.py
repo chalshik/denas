@@ -279,7 +279,7 @@ async def set_authentication_cookies(
             httponly=True,
             secure=True,
             samesite="strict",
-            max_age=3600  # 1 hour
+            max_age=604800  # 1 week (7 days)
         )
         
         response.set_cookie(
@@ -296,7 +296,7 @@ async def set_authentication_cookies(
         return TokenResponse(
             success=True,
             message="Authentication cookies set successfully",
-            expires_in=3600
+            expires_in=604800  # 1 week (7 days)
         )
         
     except Exception as e:
@@ -366,7 +366,7 @@ async def refresh_authentication_token(
             httponly=True,
             secure=True,
             samesite="strict",
-            max_age=expires_in
+            max_age=604800  # 1 week (7 days)
         )
         
         if new_refresh_token:
@@ -384,7 +384,7 @@ async def refresh_authentication_token(
         return TokenResponse(
             success=True,
             message="Token refreshed successfully",
-            expires_in=expires_in
+            expires_in=604800  # 1 week (7 days)
         )
         
     except HTTPException:

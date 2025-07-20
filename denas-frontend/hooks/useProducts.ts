@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 import { Product, ProductCreate, ProductUpdate, ProductCatalog, ProductWithDetails, ProductListResponse, ProductFilters } from "../types";
 
 export function useProducts() {
-  const apiHook = useApi<ProductCatalog>();
+  const apiHook = useApi<ProductCatalog | ProductWithDetails>();
 
   const fetchProductsCatalog = async (filters: ProductFilters = {}): Promise<ProductListResponse> => {
     apiHook.setLoading(true);
@@ -20,14 +20,79 @@ export function useProducts() {
   };
 
   const fetchProducts = async (): Promise<void> => {
-    const response = await fetchProductsCatalog({ page: 1, size: 100 });
-    // Data is already set in fetchProductsCatalog
+    apiHook.setLoading(true);
+    try {
+      // Use admin endpoint for complete product details (including inactive products)
+      const products = await api.get<ProductWithDetails[]>("/products", { 
+        skip: 0, 
+        limit: 100, 
+        include_inactive: true 
+      });
+      apiHook.setData(products);
+    } catch (error: any) {
+      apiHook.setError(error.message || "Failed to fetch products");
+      throw error;
+    } finally {
+      apiHook.setLoading(false);
+    }
+  };
+
+  const fetchAdminProducts = async (
+    page: number = 1, 
+    pageSize: number = 20, 
+    includeInactive: boolean = true,
+    filters: {
+      categoryId?: number;
+      minPrice?: number;
+      maxPrice?: number;
+    } = {}
+  ): Promise<{ products: ProductWithDetails[], total: number }> => {
+    apiHook.setLoading(true);
+    try {
+      const skip = (page - 1) * pageSize;
+      const params: any = { 
+        skip, 
+        limit: pageSize, 
+        include_inactive: includeInactive 
+      };
+
+      // Add filter parameters if provided
+      if (filters.categoryId) {
+        params.category_id = filters.categoryId;
+      }
+      if (filters.minPrice !== undefined && filters.minPrice > 0) {
+        params.min_price = filters.minPrice;
+      }
+      if (filters.maxPrice !== undefined && filters.maxPrice > 0) {
+        params.max_price = filters.maxPrice;
+      }
+
+      const response = await api.get<{
+        items: ProductWithDetails[];
+        total: number;
+        page: number;
+        size: number;
+        has_next: boolean;
+        has_previous: boolean;
+      }>("/products", params);
+      
+      return { 
+        products: response.items, 
+        total: response.total 
+      };
+    } catch (error: any) {
+      apiHook.setError(error.message || "Failed to fetch admin products");
+      throw error;
+    } finally {
+      apiHook.setLoading(false);
+    }
   };
 
   const fetchFeaturedProducts = async (limit: number = 10): Promise<ProductCatalog[]> => {
     apiHook.setLoading(true);
     try {
       const products = await api.get<ProductCatalog[]>("/products/featured", { limit });
+      // Don't set the main data array for featured products, just return them
       return products;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to fetch featured products");
@@ -37,11 +102,16 @@ export function useProducts() {
     }
   };
 
-  const searchProducts = async (query: string, skip: number = 0, limit: number = 20): Promise<ProductCatalog[]> => {
+  const searchProducts = async (query: string, page: number = 1, size: number = 20): Promise<ProductListResponse> => {
     apiHook.setLoading(true);
     try {
-      const products = await api.get<ProductCatalog[]>("/products/search", { q: query, skip, limit });
-      return products;
+      const response = await api.get<ProductListResponse>("/products/catalog", { 
+        search: query, 
+        page, 
+        size 
+      });
+      apiHook.setData(response.items);
+      return response;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to search products");
       throw error;
@@ -120,29 +190,29 @@ export function useProducts() {
     try {
       let imageUrls: string[] = [];
       
-      // Загружаем изображения если они есть
-      if (productData.images && productData.images.length > 0) {
-        try {
-          const uploadResponse = await api.uploadProductImages(productData.images);
-          imageUrls = uploadResponse.image_urls;
-        } catch (uploadError: any) {
-          // If product image upload fails due to permissions, try regular upload
-          if (uploadError.message?.includes('Forbidden') || uploadError.message?.includes('403')) {
-            console.warn('Product image upload failed, trying regular upload...');
-            const regularUploadResponse = await api.uploadMultipleFiles(productData.images, 'product-images');
-            imageUrls = regularUploadResponse.files.map(f => f.file_url);
-          } else {
-            throw uploadError;
+      // If image_urls are provided directly (from EditProductModal), use them as-is
+      if (productData.image_urls !== undefined) {
+        imageUrls = productData.image_urls;
+      } else {
+        // Legacy: Upload images if File objects are provided
+        if (productData.images && productData.images.length > 0) {
+          try {
+            const uploadResponse = await api.uploadProductImages(productData.images);
+            imageUrls = uploadResponse.image_urls;
+          } catch (uploadError: any) {
+            // If product image upload fails due to permissions, try regular upload
+            if (uploadError.message?.includes('Forbidden') || uploadError.message?.includes('403')) {
+              console.warn('Product image upload failed, trying regular upload...');
+              const regularUploadResponse = await api.uploadMultipleFiles(productData.images, 'product-images');
+              imageUrls = regularUploadResponse.files.map(f => f.file_url);
+            } else {
+              throw uploadError;
+            }
           }
         }
       }
       
-      // Если есть уже готовые URL изображений, используем их
-      if (productData.image_urls && productData.image_urls.length > 0) {
-        imageUrls = [...imageUrls, ...productData.image_urls];
-      }
-      
-      // Обновляем продукт с правильной структурой данных
+      // Build update payload
       const productPayload: any = {};
       
       if (productData.name !== undefined) productPayload.name = productData.name;
@@ -154,8 +224,11 @@ export function useProducts() {
       if (productData.preorder_available_date !== undefined) productPayload.preorder_available_date = productData.preorder_available_date;
       if (productData.is_active !== undefined) productPayload.is_active = productData.is_active;
       
-      // Добавляем image_urls только если есть новые изображения
-      if (imageUrls.length > 0) {
+      // Always include image_urls when provided (even if empty array for deletion)
+      if (productData.image_urls !== undefined) {
+        productPayload.image_urls = imageUrls;
+      } else if (imageUrls.length > 0) {
+        // Legacy: only add if there are uploaded images
         productPayload.image_urls = imageUrls;
       }
       
@@ -184,11 +257,16 @@ export function useProducts() {
     }
   };
 
-  const getByCategory = async (categoryId: number, skip: number = 0, limit: number = 20): Promise<ProductCatalog[]> => {
+  const getByCategory = async (categoryId: number, page: number = 1, size: number = 20): Promise<ProductListResponse> => {
     apiHook.setLoading(true);
     try {
-      const products = await api.get<ProductCatalog[]>(`/products/category/${categoryId}`, { skip, limit });
-      return products;
+      const response = await api.get<ProductListResponse>("/products/catalog", { 
+        category_id: categoryId, 
+        page, 
+        size 
+      });
+      apiHook.setData(response.items);
+      return response;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to fetch products by category");
       throw error;
@@ -202,6 +280,7 @@ export function useProducts() {
     products: apiHook.data || [],
     fetchProducts,
     fetchProductsCatalog,
+    fetchAdminProducts,
     fetchFeaturedProducts,
     searchProducts,
     getProductDetails,

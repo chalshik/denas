@@ -1,36 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@heroui/button';
 import { useModal } from '@/hooks/useModal';
 import { useProducts } from '@/hooks/useProducts';
 import ProductsTable from '@/components/tables/ProductsTable';
 import CreateProductModal from '@/components/modals/CreateProductModal';
-import EditProductModal from '@/components/modals/EditProductModal';
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal';
 import { Product } from '@/types';
 
 export default function AdminProductsPage() {
-  const { products = [], loading: loadingProducts, fetchProducts, deleteProduct } = useProducts();
+  const { deleteProduct } = useProducts();
   const createModal = useModal();
-  const editModal = useModal();
   const detailsModal = useModal();
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleDeleteProduct = async (productId: number) => {
     if (confirm('Are you sure you want to delete this product?')) {
       await deleteProduct(productId);
+      // Trigger refresh after successful delete
+      setRefreshKey(prev => prev + 1);
     }
-  };
-
-  const handleEditClick = (product: Product) => {
-    setSelectedProduct(product);
-    editModal.open();
   };
 
   const handleViewDetails = (product: Product) => {
@@ -38,21 +29,23 @@ export default function AdminProductsPage() {
     detailsModal.open();
   };
 
-  const handleCreateClose = () => {
-    createModal.close();
-    fetchProducts(); // Обновляем список после создания
+  // Only refresh after successful operations, not on modal close
+  const handleSuccess = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
-  const handleEditClose = () => {
-    editModal.close();
-    setSelectedProduct(null);
-    fetchProducts(); // Обновляем список после редактирования
+  const handleCreateClose = () => {
+    createModal.close();
   };
 
   const handleDetailsClose = () => {
     detailsModal.close();
     setSelectedProductId(null);
-    fetchProducts(); // Обновляем список после возможного редактирования
+  };
+
+  const handleDataChange = () => {
+    // This is called when ProductsTable wants to notify of data changes
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -72,27 +65,24 @@ export default function AdminProductsPage() {
       </div>
 
       <ProductsTable
-        products={products}
-        loading={loadingProducts}
-        onEdit={handleEditClick}
+        key={refreshKey} // Force refresh when key changes
         onDelete={handleDeleteProduct}
         onViewDetails={handleViewDetails}
+        onDataChange={handleDataChange}
       />
 
+      {/* Create Product Modal */}
       <CreateProductModal
         isOpen={createModal.isOpen}
         onClose={handleCreateClose}
+        onSuccess={handleSuccess}
       />
 
-      <EditProductModal
-        isOpen={editModal.isOpen}
-        onClose={handleEditClose}
-        product={selectedProduct}
-      />
-
+      {/* Product Details Modal */}
       <ProductDetailsModal
         isOpen={detailsModal.isOpen}
         onClose={handleDetailsClose}
+        onSuccess={handleSuccess}
         productId={selectedProductId}
       />
     </div>

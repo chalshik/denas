@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.services.products_service import ProductService
 from app.schemas.product import (
     Product, ProductCreate, ProductUpdate, ProductCatalog, 
-    ProductWithDetails, ProductListResponse, AvailabilityType
+    ProductWithDetails, ProductListResponse, AvailabilityType, AdminProductListResponse
 )
 from app.api.dependencies import get_current_user, require_admin_access, get_current_user_optional
 from app.models.user import User
@@ -76,7 +76,7 @@ async def get_featured_products(
     db: Session = Depends(get_db)
 ):
     """
-    Get featured products (public endpoint)
+    Get featured products - latest active products that are in stock (public endpoint)
     """
     try:
         products = await ProductService.get_featured_products(db=db, limit=limit)
@@ -109,99 +109,6 @@ async def get_featured_products(
             detail="Failed to fetch featured products"
         )
 
-
-@router.get("/search", response_model=List[ProductCatalog])
-async def search_products(
-    q: str = Query(..., min_length=1, description="Search query"),
-    skip: int = Query(0, ge=0, description="Number of products to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of products to return"),
-    db: Session = Depends(get_db)
-):
-    """
-    Search products by name or description (public endpoint)
-    """
-    try:
-        products = await ProductService.search_products(
-            db=db,
-            search_term=q,
-            skip=skip,
-            limit=limit
-        )
-        
-        # Convert to catalog format
-        catalog_products = []
-        for product in products:
-            primary_image = next(
-                (img for img in product.images if img.image_type.value == "official"),
-                product.images[0] if product.images else None
-            )
-            
-            catalog_product = ProductCatalog(
-                id=product.id,
-                name=product.name,
-                price=product.price,
-                image_url=primary_image.image_url if primary_image else None,
-                availability_type=product.availability_type,
-                is_active=product.is_active,
-                category_id=product.category_id
-            )
-            catalog_products.append(catalog_product)
-        
-        return catalog_products
-        
-    except Exception as e:
-        logger.error(f"Error searching products: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to search products"
-        )
-
-
-@router.get("/category/{category_id}", response_model=List[ProductCatalog])
-async def get_products_by_category(
-    category_id: int,
-    skip: int = Query(0, ge=0, description="Number of products to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of products to return"),
-    db: Session = Depends(get_db)
-):
-    """
-    Get products by category (public endpoint)
-    """
-    try:
-        products = await ProductService.get_products_by_category(
-            db=db,
-            category_id=category_id,
-            skip=skip,
-            limit=limit
-        )
-        
-        # Convert to catalog format
-        catalog_products = []
-        for product in products:
-            primary_image = next(
-                (img for img in product.images if img.image_type.value == "official"),
-                product.images[0] if product.images else None
-            )
-            
-            catalog_product = ProductCatalog(
-                id=product.id,
-                name=product.name,
-                price=product.price,
-                image_url=primary_image.image_url if primary_image else None,
-                availability_type=product.availability_type,
-                is_active=product.is_active,
-                category_id=product.category_id
-            )
-            catalog_products.append(catalog_product)
-        
-        return catalog_products
-        
-    except Exception as e:
-        logger.error(f"Error fetching products by category {category_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch products by category"
-        )
 
 
 @router.get("/{product_id}", response_model=ProductWithDetails)
@@ -243,25 +150,65 @@ async def get_product_details(
 
 
 # Admin endpoints
-@router.get("/", response_model=List[Product])
+@router.get("/", response_model=AdminProductListResponse)
 async def get_all_products(
     skip: int = Query(0, ge=0, description="Number of products to skip"),
     limit: int = Query(100, ge=1, le=200, description="Maximum number of products to return"),
+    include_inactive: bool = Query(False, description="Include inactive products"),
+    category_id: Optional[int] = Query(None, description="Filter by category ID"),
+    min_price: Optional[float] = Query(None, ge=0, description="Minimum price filter"),
+    max_price: Optional[float] = Query(None, ge=0, description="Maximum price filter"),
     admin_user: User = Depends(require_admin_access),
     db: Session = Depends(get_db)
 ):
     """
-    Get all products including inactive ones (admin only)
+    Get all products with full details for admin management (admin only)
+    Returns complete product information including category, images, and all fields
+    By default shows only active products, set include_inactive=true to see all
+    Supports filtering by category_id, min_price, and max_price
     """
     try:
-        products, _ = await ProductService.get_products_catalog(
-            db=db,
-            skip=skip,
-            limit=limit,
-            is_active=None  # Include both active and inactive
+        from sqlalchemy.orm import joinedload
+        from app.models.product import Product
+        
+        # Build base query with all related data for full product details
+        base_query = db.query(Product).options(
+            joinedload(Product.images),    # Load all product images
+            joinedload(Product.category)   # Load full category object
         )
         
-        return products
+        # Apply filters to base query
+        if not include_inactive:
+            base_query = base_query.filter(Product.is_active == True)
+            
+        if category_id is not None:
+            base_query = base_query.filter(Product.category_id == category_id)
+            
+        if min_price is not None:
+            base_query = base_query.filter(Product.price >= min_price)
+            
+        if max_price is not None:
+            base_query = base_query.filter(Product.price <= max_price)
+        
+        # Get total count before applying pagination
+        total = base_query.count()
+        
+        # Apply pagination
+        products = base_query.offset(skip).limit(limit).all()
+        
+        # Calculate pagination info
+        page = (skip // limit) + 1
+        has_next = skip + limit < total
+        has_previous = skip > 0
+        
+        return AdminProductListResponse(
+            items=products,
+            total=total,
+            page=page,
+            size=limit,
+            has_next=has_next,
+            has_previous=has_previous
+        )
         
     except Exception as e:
         logger.error(f"Error fetching all products: {str(e)}")

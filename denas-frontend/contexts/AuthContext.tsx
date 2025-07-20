@@ -177,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
         }
       }
-    }, 30 * 60 * 1000); // Refresh every 30 minutes
+    }, 24 * 60 * 60 * 1000); // Refresh every 24 hours (1 day)
 
     return () => clearInterval(refreshInterval);
   }, [user]);

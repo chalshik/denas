@@ -4,6 +4,7 @@ from typing import Optional, List
 from fastapi import HTTPException, UploadFile
 from supabase import create_client, Client
 import logging
+import urllib.parse
 
 from app.core.config import settings
 
@@ -165,10 +166,89 @@ class SupabaseStorageService:
         """
         try:
             result = self.supabase.storage.from_(self.bucket_name).remove([file_path])
-            return result.status_code == 200
+            logger.info(f"File deleted from storage: {file_path}")
+            return True
         except Exception as e:
-            logger.error(f"Delete error: {str(e)}")
+            logger.error(f"Delete error for {file_path}: {str(e)}")
             return False
+    
+    def delete_files(self, file_paths: List[str]) -> dict:
+        """
+        Delete multiple files from Supabase Storage
+        
+        Args:
+            file_paths: List of file paths to delete
+            
+        Returns:
+            Dict with success/failure counts
+        """
+        if not file_paths:
+            return {"deleted": 0, "failed": 0}
+            
+        try:
+            result = self.supabase.storage.from_(self.bucket_name).remove(file_paths)
+            logger.info(f"Bulk delete attempted for {len(file_paths)} files")
+            return {"deleted": len(file_paths), "failed": 0}
+        except Exception as e:
+            logger.error(f"Bulk delete error: {str(e)}")
+            # Try individual deletions as fallback
+            deleted_count = 0
+            for file_path in file_paths:
+                if self.delete_file(file_path):
+                    deleted_count += 1
+            return {"deleted": deleted_count, "failed": len(file_paths) - deleted_count}
+    
+    def extract_file_path_from_url(self, url: str) -> str:
+        """
+        Extract the file path from a Supabase storage URL
+        
+        Args:
+            url: Full Supabase storage URL
+            
+        Returns:
+            File path for storage operations
+        """
+        try:
+            # Supabase URLs format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+            # We need to extract everything after the bucket name
+            import urllib.parse
+            parsed_url = urllib.parse.urlparse(url)
+            
+            # Split path and find bucket segment
+            path_parts = parsed_url.path.split('/')
+            
+            # Find bucket name in path
+            if self.bucket_name in path_parts:
+                bucket_index = path_parts.index(self.bucket_name)
+                # Everything after bucket name is the file path
+                file_path = '/'.join(path_parts[bucket_index + 1:])
+                return file_path
+            else:
+                # Fallback: assume everything after 'public/' is the file path
+                if 'public' in path_parts:
+                    public_index = path_parts.index('public')
+                    file_path = '/'.join(path_parts[public_index + 1:])
+                    return file_path
+                else:
+                    # Last resort: use filename from URL
+                    return path_parts[-1]
+                    
+        except Exception as e:
+            logger.error(f"Failed to extract file path from URL {url}: {str(e)}")
+            # Return the original URL as fallback (might not work for deletion)
+            return url.split('/')[-1]
+    
+    def extract_file_paths_from_urls(self, urls: List[str]) -> List[str]:
+        """
+        Extract file paths from multiple Supabase storage URLs
+        
+        Args:
+            urls: List of Supabase storage URLs
+            
+        Returns:
+            List of file paths for storage operations
+        """
+        return [self.extract_file_path_from_url(url) for url in urls if url]
     
     def get_file_url(self, file_path: str) -> str:
         """
