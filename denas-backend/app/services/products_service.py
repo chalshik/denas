@@ -30,7 +30,8 @@ class ProductService:
         is_active: Optional[bool] = True,
         search: Optional[str] = None,
         sort_by: str = "created_at",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
+        current_user: Optional[object] = None
     ) -> Tuple[List[ProductCatalog], int]:
         """
         Get products for catalog with filtering, searching, and pagination
@@ -84,6 +85,17 @@ class ProductService:
         # Apply pagination
         products = query.offset(skip).limit(limit).all()
         
+        # Get user favorites for these products if user is authenticated
+        user_favorites = set()
+        if current_user:
+            from app.models.favorite import Favorite
+            product_ids = [product.id for product in products]
+            favorites = db.query(Favorite).filter(
+                Favorite.user_id == current_user.id,
+                Favorite.product_id.in_(product_ids)
+            ).all()
+            user_favorites = {fav.product_id for fav in favorites}
+        
         # Convert to catalog format
         catalog_products = []
         for product in products:
@@ -100,7 +112,8 @@ class ProductService:
                 image_url=primary_image.image_url if primary_image else None,
                 availability_type=product.availability_type,
                 is_active=product.is_active,
-                category_id=product.category_id
+                category_id=product.category_id,
+                is_favorited=product.id in user_favorites if current_user else None
             )
             catalog_products.append(catalog_product)
         

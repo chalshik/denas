@@ -27,6 +27,14 @@ class Category(CategoryInDB):
     pass
 
 
+class CategoryWithMetadata(CategoryInDB):
+    can_delete: bool = True
+    product_count: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
 class CategoryWithProducts(CategoryInDB):
     products: List["Product"] = []
 

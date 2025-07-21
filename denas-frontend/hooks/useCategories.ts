@@ -1,6 +1,6 @@
 import { useApi } from "./useApi";
 import { api } from "../lib/api";
-import { Category, CategoryCreate, CategoryWithProducts } from "../types";
+import { Category, CategoryCreate, CategoryWithProducts, CategoryWithMetadata } from "../types";
 
 export function useCategories() {
   const apiHook = useApi<Category>();
@@ -12,6 +12,19 @@ export function useCategories() {
       apiHook.setData(categories);
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to fetch categories");
+    } finally {
+      apiHook.setLoading(false);
+    }
+  };
+
+  const fetchCategoriesWithMetadata = async (skip: number = 0, limit: number = 100): Promise<CategoryWithMetadata[]> => {
+    apiHook.setLoading(true);
+    try {
+      const categories = await api.get<CategoryWithMetadata[]>("/categories/admin/with-metadata", { skip, limit });
+      return categories;
+    } catch (error: any) {
+      apiHook.setError(error.message || "Failed to fetch categories with metadata");
+      throw error;
     } finally {
       apiHook.setLoading(false);
     }
@@ -101,6 +114,7 @@ export function useCategories() {
     ...apiHook,
     categories: apiHook.data || [],
     fetchCategories,
+    fetchCategoriesWithMetadata,
     getCategoryById,
     getWithProducts,
     searchCategories,

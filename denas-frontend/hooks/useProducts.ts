@@ -45,10 +45,71 @@ export function useProducts() {
       categoryId?: number;
       minPrice?: number;
       maxPrice?: number;
+      search?: string;
     } = {}
   ): Promise<{ products: ProductWithDetails[], total: number }> => {
     apiHook.setLoading(true);
     try {
+      // If search is provided, use catalog endpoint (which supports search)
+      if (filters.search && filters.search.trim()) {
+        const searchParams: any = {
+          page,
+          size: pageSize,
+          search: filters.search.trim(),
+          is_active: includeInactive ? undefined : true, // catalog endpoint filters for active by default
+        };
+
+        // Add filter parameters for catalog endpoint
+        if (filters.categoryId) {
+          searchParams.category_id = filters.categoryId;
+        }
+        if (filters.minPrice !== undefined && filters.minPrice > 0) {
+          searchParams.min_price = filters.minPrice;
+        }
+        if (filters.maxPrice !== undefined && filters.maxPrice > 0) {
+          searchParams.max_price = filters.maxPrice;
+        }
+
+        const catalogResponse = await api.get<{
+          items: ProductCatalog[];
+          total: number;
+          page: number;
+          size: number;
+          has_next: boolean;
+          has_previous: boolean;
+        }>("/products/catalog", searchParams);
+
+        // Convert ProductCatalog to ProductWithDetails format for consistency
+        const productsWithDetails: ProductWithDetails[] = catalogResponse.items.map((product: ProductCatalog) => ({
+          id: product.id,
+          name: product.name,
+          description: '', // Catalog doesn't include description
+          price: product.price,
+          stock_quantity: 0, // Catalog doesn't include stock
+          availability_type: product.availability_type || 'IN_STOCK',
+          preorder_available_date: undefined,
+          is_active: product.is_active,
+          category_id: product.category_id,
+          created_at: '', // Catalog doesn't include created_at
+          updated_at: '',
+          category: undefined, // Will be populated by categoryMap in component
+          images: product.image_url ? [{ 
+            id: 0, 
+            product_id: product.id, 
+            image_url: product.image_url, 
+            image_type: 'official' as any,
+            created_at: ''
+          }] : [],
+          favorites_count: 0
+        }));
+
+        return {
+          products: productsWithDetails,
+          total: catalogResponse.total
+        };
+      }
+
+      // No search - use admin endpoint for full details
       const skip = (page - 1) * pageSize;
       const params: any = { 
         skip, 

@@ -8,8 +8,8 @@ class FavoriteBase(BaseModel):
     product_id: int
 
 
-class FavoriteCreate(FavoriteBase):
-    pass
+class FavoriteCreate(BaseModel):
+    product_id: int  # Only product_id needed, user_id will be set from auth
 
 
 class FavoriteUpdate(BaseModel):

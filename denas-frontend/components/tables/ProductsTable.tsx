@@ -39,6 +39,7 @@ export default function ProductsTable({
     categoryId: undefined as number | undefined,
     minPrice: undefined as number | undefined,
     maxPrice: undefined as number | undefined,
+    search: undefined as string | undefined,
   });
   
   // Column visibility state
@@ -70,10 +71,14 @@ export default function ProductsTable({
     { key: 'actions', label: 'Actions', required: true },
   ];
 
-  // Debounce search term
+  // Debounce search term and update filters
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchTerm(searchInput);
+      setFilters(prev => ({
+        ...prev,
+        search: searchInput.trim() || undefined
+      }));
     }, 300);
 
     return () => clearTimeout(timer);
@@ -145,7 +150,7 @@ export default function ProductsTable({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.categoryId, filters.minPrice, filters.maxPrice]);
+  }, [filters.categoryId, filters.minPrice, filters.maxPrice, filters.search]);
 
   // Refresh data when external changes occur
   const handleRefresh = () => {
@@ -180,19 +185,16 @@ export default function ProductsTable({
     setSearchInput('');
     setMinPriceInput('');
     setMaxPriceInput('');
+    setSearchTerm('');
     setFilters({
       categoryId: undefined,
       minPrice: undefined,
       maxPrice: undefined,
+      search: undefined,
     });
   };
 
-  // Filter products by search term
-  const filteredProducts = products.filter(product =>
-    (product.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (getCategoryName(product).toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
+  // Helper function to get category name
   const getCategoryName = (product: ProductWithDetails): string => {
     // Check if it has full category object
     if (product.category?.name) {
@@ -371,7 +373,7 @@ export default function ProductsTable({
           emptyContent={loading ? "Loading products..." : "No products found"}
           isLoading={loading}
         >
-          {filteredProducts.map((product) => (
+          {products.map((product) => (
             <TableRow 
               key={product.id} 
               className="hover:bg-gray-50 cursor-pointer"
@@ -382,7 +384,7 @@ export default function ProductsTable({
                   <TableCell key="name">
                     <div>
                       <div className="font-medium text-gray-900">{product.name}</div>
-                      {product.description && (
+                      {product.description && product.description.trim() && (
                         <div className="text-sm text-gray-500">
                           {product.description}
                     </div>

@@ -31,6 +31,7 @@ async def get_products_catalog(
     search: Optional[str] = Query(None, description="Search in product name and description"),
     sort_by: str = Query("created_at", description="Sort by: name, price, created_at"),
     sort_order: str = Query("desc", description="Sort order: asc, desc"),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """
@@ -50,7 +51,8 @@ async def get_products_catalog(
             is_active=is_active,
             search=search,
             sort_by=sort_by,
-            sort_order=sort_order
+            sort_order=sort_order,
+            current_user=current_user
         )
         
         return ProductListResponse(

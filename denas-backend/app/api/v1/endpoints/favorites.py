@@ -19,9 +19,6 @@ async def add_favorite(
 ):
     """Add a product to user's favorites"""
     
-    # Override user_id with current authenticated user
-    favorite_data.user_id = current_user.id
-    
     # Check if product exists
     product = db.query(models.Product).filter(models.Product.id == favorite_data.product_id).first()
     if not product:
@@ -44,7 +41,10 @@ async def add_favorite(
     
     # Create favorite
     try:
-        db_favorite = models.Favorite(**favorite_data.dict())
+        db_favorite = models.Favorite(
+            user_id=current_user.id,
+            product_id=favorite_data.product_id
+        )
         db.add(db_favorite)
         db.commit()
         db.refresh(db_favorite)

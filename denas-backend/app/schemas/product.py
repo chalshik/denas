@@ -107,6 +107,7 @@ class ProductCatalog(BaseModel):
     availability_type: str  # Change to string type
     is_active: bool
     category_id: int
+    is_favorited: Optional[bool] = None  # Whether current user has favorited this product
 
     @field_validator('availability_type', mode='before')
     @classmethod

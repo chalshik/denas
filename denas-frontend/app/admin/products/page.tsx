@@ -4,15 +4,19 @@ import React, { useState } from 'react';
 import { Button } from '@heroui/button';
 import { useModal } from '@/hooks/useModal';
 import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import ProductsTable from '@/components/tables/ProductsTable';
 import CreateProductModal from '@/components/modals/CreateProductModal';
 import ProductDetailsModal from '@/components/modals/ProductDetailsModal';
+import CategoryManagementModal from '@/components/modals/CategoryManagementModal';
 import { Product } from '@/types';
 
 export default function AdminProductsPage() {
   const { deleteProduct } = useProducts();
+  const { fetchCategories } = useCategories();
   const createModal = useModal();
   const detailsModal = useModal();
+  const categoryModal = useModal();
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -55,13 +59,23 @@ export default function AdminProductsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
           <p className="text-gray-600 mt-2">Manage your product catalog</p>
         </div>
-        <Button 
-          color="primary" 
-          size="lg"
-          onPress={createModal.open}
-        >
-          Add New Product
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            color="secondary" 
+            size="lg"
+            variant="flat"
+            onPress={categoryModal.open}
+          >
+            Manage Categories
+          </Button>
+          <Button 
+            color="primary" 
+            size="lg"
+            onPress={createModal.open}
+          >
+            Add New Product
+          </Button>
+        </div>
       </div>
 
       <ProductsTable
@@ -84,6 +98,16 @@ export default function AdminProductsPage() {
         onClose={handleDetailsClose}
         onSuccess={handleSuccess}
         productId={selectedProductId}
+      />
+
+      {/* Category Management Modal */}
+      <CategoryManagementModal
+        isOpen={categoryModal.isOpen}
+        onClose={categoryModal.close}
+        onSuccess={() => {
+          fetchCategories(); // Refresh categories list
+          setRefreshKey(prev => prev + 1); // Refresh products table
+        }}
       />
     </div>
   );

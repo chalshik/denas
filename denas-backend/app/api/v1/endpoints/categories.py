@@ -5,7 +5,7 @@ import logging
 
 from app.db.session import get_db
 from app.services.category_service import CategoryService
-from app.schemas.category import Category, CategoryCreate, CategoryUpdate, CategoryWithProducts
+from app.schemas.category import Category, CategoryCreate, CategoryUpdate, CategoryWithProducts, CategoryWithMetadata
 from app.api.dependencies import require_admin_access
 from app.models.user import User
 
@@ -122,6 +122,28 @@ async def search_categories(
 
 
 # Admin endpoints
+@router.get("/admin/with-metadata", response_model=List[CategoryWithMetadata])
+async def get_categories_with_metadata(
+    skip: int = Query(0, ge=0, description="Number of categories to skip"),
+    limit: int = Query(100, ge=1, le=100, description="Maximum number of categories to return"),
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(require_admin_access)
+):
+    """
+    Get all categories with metadata (including delete permissions) for admin
+    """
+    try:
+        categories = await CategoryService.get_all_categories_with_metadata(db=db, skip=skip, limit=limit)
+        return categories
+        
+    except Exception as e:
+        logger.error(f"Error fetching categories with metadata: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch categories with metadata"
+        )
+
+
 @router.post("/", response_model=Category, status_code=status.HTTP_201_CREATED)
 async def create_category(
     category_data: CategoryCreate,
@@ -199,6 +221,7 @@ async def delete_category(
 ):
     """
     Delete a category (admin only)
+    Note: Categories with associated products cannot be deleted
     """
     try:
         deleted = await CategoryService.delete_category(db=db, category_id=category_id)
@@ -212,6 +235,11 @@ async def delete_category(
         logger.info(f"Category deleted successfully by admin {admin_user.id}")
         return {"success": True, "message": "Category deleted successfully"}
         
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except HTTPException:
         raise
     except Exception as e:

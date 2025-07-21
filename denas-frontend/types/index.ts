@@ -43,6 +43,7 @@ export interface ProductCatalog {
   availability_type: AvailabilityType;
   is_active: boolean;
   category_id: number;
+  is_favorited?: boolean; // Whether current user has favorited this product
 }
 
 export interface ProductWithDetails extends Product {
@@ -109,4 +110,42 @@ export interface ProductUpdate {
 
 export interface CategoryCreate {
   name: string;
+}
+
+export interface CategoryWithMetadata extends Category {
+  can_delete: boolean;
+  product_count?: number;
+}
+
+// Favorites interfaces
+export interface Favorite {
+  id: number;
+  user_id: number;
+  product_id: number;
+  created_at: string;
+}
+
+export interface FavoriteCreate {
+  product_id: number;
+}
+
+export interface FavoriteWithProduct extends Favorite {
+  product: {
+    id: number;
+    name: string;
+    description?: string;
+    price: number;
+    stock_quantity: number;
+    availability_type: string;
+    is_active: boolean;
+    category_id: number;
+    created_at: string;
+  };
+}
+
+export interface FavoriteCheckResponse {
+  user_id: number;
+  product_id: number;
+  is_favorited: boolean;
+  favorite_id?: number;
 }
