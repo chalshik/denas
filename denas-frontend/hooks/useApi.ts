@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { api } from "../lib/api";
 
 interface UseApiState<T> {
@@ -17,25 +18,27 @@ export function useApi<T>() {
   });
 
   const setLoading = (loading: boolean) => {
-    setState(prev => ({ ...prev, loading }));
+    setState((prev) => ({ ...prev, loading }));
   };
 
   const setError = (error: string | null) => {
-    setState(prev => ({ ...prev, error }));
+    setState((prev) => ({ ...prev, error }));
   };
 
   const setData = (data: T[]) => {
-    setState(prev => ({ ...prev, data }));
+    setState((prev) => ({ ...prev, data }));
   };
 
   // Fetch list
   const fetchList = async (endpoint: string, params?: Record<string, any>) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await api.get<T[]>(endpoint, params);
-      setState(prev => ({ ...prev, data, loading: false }));
+
+      setState((prev) => ({ ...prev, data, loading: false }));
+
       return data;
     } catch (error: any) {
       setError(error.message || "Failed to fetch data");
@@ -48,10 +51,12 @@ export function useApi<T>() {
   const fetchItem = async (endpoint: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const item = await api.get<T>(endpoint);
-      setState(prev => ({ ...prev, item, loading: false }));
+
+      setState((prev) => ({ ...prev, item, loading: false }));
+
       return item;
     } catch (error: any) {
       setError(error.message || "Failed to fetch item");
@@ -64,14 +69,16 @@ export function useApi<T>() {
   const createItem = async (endpoint: string, data: any) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const newItem = await api.post<T>(endpoint, data);
-      setState(prev => ({ 
-        ...prev, 
+
+      setState((prev) => ({
+        ...prev,
         data: [newItem, ...prev.data],
-        loading: false 
+        loading: false,
       }));
+
       return newItem;
     } catch (error: any) {
       setError(error.message || "Failed to create item");
@@ -84,17 +91,22 @@ export function useApi<T>() {
   const updateItem = async (endpoint: string, data: any) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const updatedItem = await api.put<T>(endpoint, data);
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
-        data: prev.data.map((item: any) => 
-          (item as any).id === (updatedItem as any).id ? updatedItem : item
+        data: prev.data.map((item: any) =>
+          (item as any).id === (updatedItem as any).id ? updatedItem : item,
         ),
-        item: prev.item && (prev.item as any).id === (updatedItem as any).id ? updatedItem : prev.item,
-        loading: false
+        item:
+          prev.item && (prev.item as any).id === (updatedItem as any).id
+            ? updatedItem
+            : prev.item,
+        loading: false,
       }));
+
       return updatedItem;
     } catch (error: any) {
       setError(error.message || "Failed to update item");
@@ -107,17 +119,22 @@ export function useApi<T>() {
   const patchItem = async (endpoint: string, data: any) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const updatedItem = await api.patch<T>(endpoint, data);
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
-        data: prev.data.map((item: any) => 
-          (item as any).id === (updatedItem as any).id ? updatedItem : item
+        data: prev.data.map((item: any) =>
+          (item as any).id === (updatedItem as any).id ? updatedItem : item,
         ),
-        item: prev.item && (prev.item as any).id === (updatedItem as any).id ? updatedItem : prev.item,
-        loading: false
+        item:
+          prev.item && (prev.item as any).id === (updatedItem as any).id
+            ? updatedItem
+            : prev.item,
+        loading: false,
       }));
+
       return updatedItem;
     } catch (error: any) {
       setError(error.message || "Failed to patch item");
@@ -130,16 +147,17 @@ export function useApi<T>() {
   const deleteItem = async (endpoint: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await api.delete(endpoint);
       // Extract ID from endpoint for state update
-      const id = endpoint.split('/').pop();
-      setState(prev => ({
+      const id = endpoint.split("/").pop();
+
+      setState((prev) => ({
         ...prev,
         data: prev.data.filter((item: any) => item.id !== id),
         item: prev.item && (prev.item as any).id !== id ? prev.item : null,
-        loading: false
+        loading: false,
       }));
     } catch (error: any) {
       setError(error.message || "Failed to delete item");

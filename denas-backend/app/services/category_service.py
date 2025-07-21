@@ -121,7 +121,7 @@ class CategoryService:
                 logger.error("Auto-increment sequence may be out of sync. Consider running: SELECT setval('categories_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM categories));")
                 raise ValueError("Database sequence error. Please contact administrator.")
             else:
-                raise ValueError("Category with this name already exists")
+            raise ValueError("Category with this name already exists")
         except Exception as e:
             db.rollback()
             logger.error(f"Error creating category: {str(e)}")

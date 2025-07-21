@@ -52,4 +52,4 @@ const subtitle = tv({
 
 export interface PrimitivesProps extends VariantProps<typeof title> {}
 
-export { title, subtitle }; 
+export { title, subtitle };

@@ -1,18 +1,19 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@heroui/button';
-import { Link } from '@heroui/link';
-import { useAuth } from '@/contexts/AuthContext';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { 
-  ShoppingBagIcon, 
-  ChatBubbleLeftRightIcon, 
-  ChartBarIcon, 
+import React from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
+import {
+  ShoppingBagIcon,
+  ChatBubbleLeftRightIcon,
+  ChartBarIcon,
   Cog6ToothIcon,
-  ArrowRightOnRectangleIcon
-} from '@heroicons/react/24/outline';
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -31,28 +32,28 @@ function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const menuItems = [
     {
-      name: 'Dashboard',
-      href: '/admin',
+      name: "Dashboard",
+      href: "/admin",
       icon: ChartBarIcon,
     },
     {
-      name: 'Products',
-      href: '/admin/products',
+      name: "Products",
+      href: "/admin/products",
       icon: ShoppingBagIcon,
     },
     {
-      name: 'Chats',
-      href: '/admin/chats',
+      name: "Chats",
+      href: "/admin/chats",
       icon: ChatBubbleLeftRightIcon,
     },
     {
-      name: 'Analytics',
-      href: '/admin/analytics',
+      name: "Analytics",
+      href: "/admin/analytics",
       icon: ChartBarIcon,
     },
     {
-      name: 'Settings',
-      href: '/admin/settings',
+      name: "Settings",
+      href: "/admin/settings",
       icon: Cog6ToothIcon,
     },
   ];
@@ -70,11 +71,12 @@ function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
           <div className="px-4 space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
+
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
                   className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                  href={item.href}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.name}
@@ -85,14 +87,14 @@ function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="p-4 mt-auto">
           <Button
-            color="danger"
-            variant="bordered"
-            size="sm"
             className="w-full"
+            color="danger"
+            size="sm"
             startContent={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
+            variant="bordered"
             onPress={async () => {
               await signOut();
-              router.push('/');
+              router.push("/");
             }}
           >
             Sign Out
@@ -101,10 +103,8 @@ function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
       </div>
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-8">
-          {children}
-        </div>
+        <div className="p-8">{children}</div>
       </div>
     </div>
   );
-} 
+}

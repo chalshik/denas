@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Spinner } from '@heroui/spinner';
+import React from "react";
+import { useRouter } from "next/navigation";
+import { Spinner } from "@heroui/spinner";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,10 +12,10 @@ interface ProtectedRouteProps {
   fallback?: React.ReactNode;
 }
 
-export function ProtectedRoute({ 
-  children, 
-  requireAdmin = false, 
-  fallback 
+export function ProtectedRoute({
+  children,
+  requireAdmin = false,
+  fallback,
 }: ProtectedRouteProps) {
   const { user, loading, error } = useAuth();
   const router = useRouter();
@@ -23,12 +24,12 @@ export function ProtectedRoute({
     if (!loading && !error) {
       if (!user) {
         // Not authenticated, redirect to login
-        console.log('User not authenticated, redirecting to login');
-        router.push('/auth/login');
-      } else if (requireAdmin && user.role !== 'Admin') {
+        console.log("User not authenticated, redirecting to login");
+        router.push("/auth/login");
+      } else if (requireAdmin && user.role !== "Admin") {
         // User is not admin but admin access required
-        console.log('User is not admin, redirecting to home');
-        router.push('/');
+        console.log("User is not admin, redirecting to home");
+        router.push("/");
       }
     }
   }, [loading, error, user, router, requireAdmin]);
@@ -54,9 +55,9 @@ export function ProtectedRoute({
             <h3 className="font-semibold">Authentication Error</h3>
             <p className="mt-1">{error}</p>
           </div>
-          <button 
-            onClick={() => router.push('/auth/login')}
+          <button
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => router.push("/auth/login")}
           >
             Go to Login
           </button>
@@ -71,22 +72,26 @@ export function ProtectedRoute({
   }
 
   // Check admin requirement
-  if (requireAdmin && user.role !== 'Admin') {
-    return fallback || (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-6 py-4 rounded">
-            <h3 className="font-semibold">Access Denied</h3>
-            <p className="mt-1">You need admin privileges to access this page.</p>
+  if (requireAdmin && user.role !== "Admin") {
+    return (
+      fallback || (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-6 py-4 rounded">
+              <h3 className="font-semibold">Access Denied</h3>
+              <p className="mt-1">
+                You need admin privileges to access this page.
+              </p>
+            </div>
+            <button
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => router.push("/")}
+            >
+              Go to Home
+            </button>
           </div>
-          <button 
-            onClick={() => router.push('/')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Go to Home
-          </button>
         </div>
-      </div>
+      )
     );
   }
 
@@ -94,9 +99,12 @@ export function ProtectedRoute({
 }
 
 // Convenience component for admin-only routes
-export function AdminRoute({ children, fallback }: { 
-  children: React.ReactNode; 
-  fallback?: React.ReactNode; 
+export function AdminRoute({
+  children,
+  fallback,
+}: {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
 }) {
   return (
     <ProtectedRoute requireAdmin fallback={fallback}>
@@ -106,13 +114,12 @@ export function AdminRoute({ children, fallback }: {
 }
 
 // Convenience component for authenticated routes
-export function AuthRoute({ children, fallback }: { 
-  children: React.ReactNode; 
-  fallback?: React.ReactNode; 
+export function AuthRoute({
+  children,
+  fallback,
+}: {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
 }) {
-  return (
-    <ProtectedRoute fallback={fallback}>
-      {children}
-    </ProtectedRoute>
-  );
-} 
+  return <ProtectedRoute fallback={fallback}>{children}</ProtectedRoute>;
+}

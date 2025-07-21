@@ -1,8 +1,8 @@
-import { api } from '../api';
-import { Product, ProductCreate } from '../../types';
+import { api } from "../api";
+import { Product, ProductCreate } from "../../types";
 
 class ProductService {
-  private basePath = '/products';
+  private basePath = "/products";
 
   async list(): Promise<Product[]> {
     return api.get<Product[]>(this.basePath);
@@ -30,4 +30,4 @@ class ProductService {
 }
 
 export const productService = new ProductService();
-export type { Product, ProductCreate }; 
+export type { Product, ProductCreate };

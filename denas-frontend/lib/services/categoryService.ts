@@ -1,8 +1,8 @@
-import { api } from '../api';
-import { Category, CategoryCreate, CategoryWithProducts } from '../../types';
+import { api } from "../api";
+import { Category, CategoryCreate, CategoryWithProducts } from "../../types";
 
 class CategoryService {
-  private basePath = '/categories';
+  private basePath = "/categories";
 
   async list(): Promise<Category[]> {
     return api.get<Category[]>(this.basePath);
@@ -30,4 +30,4 @@ class CategoryService {
 }
 
 export const categoryService = new CategoryService();
-export type { Category, CategoryCreate, CategoryWithProducts }; 
+export type { Category, CategoryCreate, CategoryWithProducts };

@@ -1,14 +1,27 @@
-import { useApi } from "./useApi";
 import { api } from "../lib/api";
-import { Category, CategoryCreate, CategoryWithProducts, CategoryWithMetadata } from "../types";
+import {
+  Category,
+  CategoryCreate,
+  CategoryWithProducts,
+  CategoryWithMetadata,
+} from "../types";
+
+import { useApi } from "./useApi";
 
 export function useCategories() {
   const apiHook = useApi<Category>();
 
-  const fetchCategories = async (skip: number = 0, limit: number = 100): Promise<void> => {
+  const fetchCategories = async (
+    skip: number = 0,
+    limit: number = 100,
+  ): Promise<void> => {
     apiHook.setLoading(true);
     try {
-      const categories = await api.get<Category[]>("/categories", { skip, limit });
+      const categories = await api.get<Category[]>("/categories", {
+        skip,
+        limit,
+      });
+
       apiHook.setData(categories);
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to fetch categories");
@@ -17,13 +30,22 @@ export function useCategories() {
     }
   };
 
-  const fetchCategoriesWithMetadata = async (skip: number = 0, limit: number = 100): Promise<CategoryWithMetadata[]> => {
+  const fetchCategoriesWithMetadata = async (
+    skip: number = 0,
+    limit: number = 100,
+  ): Promise<CategoryWithMetadata[]> => {
     apiHook.setLoading(true);
     try {
-      const categories = await api.get<CategoryWithMetadata[]>("/categories/admin/with-metadata", { skip, limit });
+      const categories = await api.get<CategoryWithMetadata[]>(
+        "/categories/admin/with-metadata",
+        { skip, limit },
+      );
+
       return categories;
     } catch (error: any) {
-      apiHook.setError(error.message || "Failed to fetch categories with metadata");
+      apiHook.setError(
+        error.message || "Failed to fetch categories with metadata",
+      );
       throw error;
     } finally {
       apiHook.setLoading(false);
@@ -34,6 +56,7 @@ export function useCategories() {
     apiHook.setLoading(true);
     try {
       const category = await api.get<Category>(`/categories/${id}`);
+
       return category;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to fetch category");
@@ -46,20 +69,33 @@ export function useCategories() {
   const getWithProducts = async (id: number): Promise<CategoryWithProducts> => {
     apiHook.setLoading(true);
     try {
-      const category = await api.get<CategoryWithProducts>(`/categories/${id}/with-products`);
+      const category = await api.get<CategoryWithProducts>(
+        `/categories/${id}/with-products`,
+      );
+
       return category;
     } catch (error: any) {
-      apiHook.setError(error.message || "Failed to fetch category with products");
+      apiHook.setError(
+        error.message || "Failed to fetch category with products",
+      );
       throw error;
     } finally {
       apiHook.setLoading(false);
     }
   };
 
-  const searchCategories = async (searchTerm: string, skip: number = 0, limit: number = 100): Promise<Category[]> => {
+  const searchCategories = async (
+    searchTerm: string,
+    skip: number = 0,
+    limit: number = 100,
+  ): Promise<Category[]> => {
     apiHook.setLoading(true);
     try {
-      const categories = await api.get<Category[]>(`/categories/search/${searchTerm}`, { skip, limit });
+      const categories = await api.get<Category[]>(
+        `/categories/search/${searchTerm}`,
+        { skip, limit },
+      );
+
       return categories;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to search categories");
@@ -69,11 +105,15 @@ export function useCategories() {
     }
   };
 
-  const createCategory = async (categoryData: CategoryCreate): Promise<Category> => {
+  const createCategory = async (
+    categoryData: CategoryCreate,
+  ): Promise<Category> => {
     apiHook.setLoading(true);
     try {
       const category = await api.post<Category>("/categories", categoryData);
+
       await fetchCategories(); // Refresh the list
+
       return category;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to create category");
@@ -83,11 +123,19 @@ export function useCategories() {
     }
   };
 
-  const updateCategory = async (id: number, categoryData: Partial<CategoryCreate>): Promise<Category> => {
+  const updateCategory = async (
+    id: number,
+    categoryData: Partial<CategoryCreate>,
+  ): Promise<Category> => {
     apiHook.setLoading(true);
     try {
-      const category = await api.put<Category>(`/categories/${id}`, categoryData);
+      const category = await api.put<Category>(
+        `/categories/${id}`,
+        categoryData,
+      );
+
       await fetchCategories(); // Refresh the list
+
       return category;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to update category");

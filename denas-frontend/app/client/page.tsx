@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Spinner } from '@heroui/spinner';
-import { Card, CardBody } from '@heroui/card';
-import { Button } from '@heroui/button';
-import { useRouter } from 'next/navigation';
+import React from "react";
+import { Spinner } from "@heroui/spinner";
+import { Card, CardBody } from "@heroui/card";
+import { useRouter } from "next/navigation";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ClientDashboard() {
   const { user, loading } = useAuth();
@@ -14,9 +14,9 @@ export default function ClientDashboard() {
   // Redirect if not authenticated or if admin
   React.useEffect(() => {
     if (!loading && !user) {
-      router.push('/auth/login');
-    } else if (user && user.role === 'Admin') {
-      router.push('/admin');
+      router.push("/auth/login");
+    } else if (user && user.role === "Admin") {
+      router.push("/admin");
     }
   }, [user, loading, router]);
 
@@ -31,32 +31,32 @@ export default function ClientDashboard() {
     );
   }
 
-  if (!user || user.role === 'Admin') {
+  if (!user || user.role === "Admin") {
     return null; // Will redirect via useEffect
   }
 
   const quickActions = [
     {
-      title: 'Browse Catalog',
-      description: 'Explore our product collection',
-      icon: '🛍️',
-      path: '/client/catalog',
-      color: 'primary'
+      title: "Browse Catalog",
+      description: "Explore our product collection",
+      icon: "🛍️",
+      path: "/client/catalog",
+      color: "primary",
     },
     {
-      title: 'View Favorites',
-      description: 'See your saved items',
-      icon: '❤️', 
-      path: '/client/favorites',
-      color: 'secondary'
+      title: "View Favorites",
+      description: "See your saved items",
+      icon: "❤️",
+      path: "/client/favorites",
+      color: "secondary",
     },
     {
-      title: 'Shopping Cart',
-      description: 'Review your cart',
-      icon: '🛒',
-      path: '/client/cart', 
-      color: 'success'
-    }
+      title: "Shopping Cart",
+      description: "Review your cart",
+      icon: "🛒",
+      path: "/client/cart",
+      color: "success",
+    },
   ];
 
   return (
@@ -72,10 +72,10 @@ export default function ClientDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {quickActions.map((action) => (
-          <Card 
+          <Card
             key={action.path}
-            className="cursor-pointer hover:shadow-lg transition-shadow group"
             isPressable
+            className="cursor-pointer hover:shadow-lg transition-shadow group"
             onPress={() => router.push(action.path)}
           >
             <CardBody className="text-center p-6">
@@ -83,16 +83,14 @@ export default function ClientDashboard() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {action.title}
               </h3>
-              <p className="text-gray-600 mb-4">
-                {action.description}
-              </p>
-              <div 
+              <p className="text-gray-600 mb-4">{action.description}</p>
+              <div
                 className={`w-full py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                  action.color === 'primary' 
-                    ? 'bg-blue-100 text-blue-700 group-hover:bg-blue-200' 
-                    : action.color === 'success'
-                    ? 'bg-green-100 text-green-700 group-hover:bg-green-200'
-                    : 'bg-purple-100 text-purple-700 group-hover:bg-purple-200'
+                  action.color === "primary"
+                    ? "bg-blue-100 text-blue-700 group-hover:bg-blue-200"
+                    : action.color === "success"
+                      ? "bg-green-100 text-green-700 group-hover:bg-green-200"
+                      : "bg-purple-100 text-purple-700 group-hover:bg-purple-200"
                 }`}
               >
                 Go to {action.title}
@@ -124,4 +122,4 @@ export default function ClientDashboard() {
       </div>
     </div>
   );
-} 
+}

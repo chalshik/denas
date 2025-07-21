@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 export function useFetch<T = any>(url: string, options?: RequestInit) {
   const [data, setData] = useState<T | null>(null);
@@ -10,8 +10,10 @@ export function useFetch<T = any>(url: string, options?: RequestInit) {
     setError(null);
     try {
       const res = await fetch(url, options);
-      if (!res.ok) throw new Error('Failed to fetch');
+
+      if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
+
       setData(json);
     } catch (e) {
       setError(e);
@@ -20,7 +22,9 @@ export function useFetch<T = any>(url: string, options?: RequestInit) {
     }
   }, [url, options]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   return { data, loading, error, refetch: fetchData };
-} 
+}

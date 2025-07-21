@@ -3,6 +3,7 @@
 import * as React from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
+
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export interface ProvidersProps {
@@ -22,9 +23,7 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <AuthProvider>
-      <HeroUIProvider navigate={router.push}>
-        {children}
-      </HeroUIProvider>
+      <HeroUIProvider navigate={router.push}>{children}</HeroUIProvider>
     </AuthProvider>
   );
 }

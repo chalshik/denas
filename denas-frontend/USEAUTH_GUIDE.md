@@ -24,17 +24,17 @@ lib/
 
 ```typescript
 interface AuthState {
-  user: User | null;           // Объект пользователя Firebase
-  role: 'admin' | 'user' | null; // Роль пользователя
-  loading: boolean;            // Состояние загрузки
-  isAuthenticated: boolean;    // Авторизован ли пользователь
-  isAdmin: boolean;           // Является ли админом
+  user: User | null; // Объект пользователя Firebase
+  role: "admin" | "user" | null; // Роль пользователя
+  loading: boolean; // Состояние загрузки
+  isAuthenticated: boolean; // Авторизован ли пользователь
+  isAdmin: boolean; // Является ли админом
 }
 
 interface AuthActions {
-  logout: () => Promise<void>;           // Выход из системы
-  setUserRole: (role: 'admin' | 'user') => void; // Установка роли
-  clearUserRole: () => void;             // Очистка роли
+  logout: () => Promise<void>; // Выход из системы
+  setUserRole: (role: "admin" | "user") => void; // Установка роли
+  clearUserRole: () => void; // Очистка роли
 }
 ```
 
@@ -44,13 +44,13 @@ interface AuthActions {
 import { useAuth } from '@/app/hooks/useAuth';
 
 function MyComponent() {
-  const { 
-    user, 
-    role, 
-    loading, 
-    isAuthenticated, 
-    isAdmin, 
-    logout 
+  const {
+    user,
+    role,
+    loading,
+    isAuthenticated,
+    isAdmin,
+    logout
   } = useAuth();
 
   if (loading) {
@@ -75,6 +75,7 @@ function MyComponent() {
 ## 🔐 **Специализированные хуки**
 
 ### **useAdminAccess()**
+
 Проверяет доступ к админ-функциям:
 
 ```typescript
@@ -91,6 +92,7 @@ function AdminComponent() {
 ```
 
 ### **useProtectedRoute(requireAdmin)**
+
 Для защищенных маршрутов:
 
 ```typescript
@@ -109,6 +111,7 @@ function ProtectedComponent() {
 ## 🛡️ **Компоненты защищенных маршрутов**
 
 ### **ProtectedRoute**
+
 Основной компонент для защиты маршрутов:
 
 ```typescript
@@ -124,6 +127,7 @@ function AdminPage() {
 ```
 
 ### **AdminRoute**
+
 Удобный компонент для админ-страниц:
 
 ```typescript
@@ -139,6 +143,7 @@ function AdminPage() {
 ```
 
 ### **AuthRoute**
+
 Для авторизованных пользователей:
 
 ```typescript
@@ -158,15 +163,15 @@ function UserPage() {
 ### **Обновление LoginForm**
 
 ```typescript
-import { useAuth } from '@/app/hooks/useAuth';
+import { useAuth } from "@/app/hooks/useAuth";
 
 function LoginForm() {
   const { setUserRole } = useAuth();
 
   const handleLogin = async () => {
     // ... логика входа
-    const isAdmin = phoneNumber.includes('admin');
-    setUserRole(isAdmin ? 'admin' : 'user');
+    const isAdmin = phoneNumber.includes("admin");
+    setUserRole(isAdmin ? "admin" : "user");
   };
 }
 ```
@@ -174,15 +179,15 @@ function LoginForm() {
 ### **Обновление RegisterForm**
 
 ```typescript
-import { useAuth } from '@/app/hooks/useAuth';
+import { useAuth } from "@/app/hooks/useAuth";
 
 function RegisterForm() {
   const { setUserRole } = useAuth();
 
   const handleRegister = async () => {
     // ... логика регистрации
-    const isAdmin = phoneNumber.includes('admin');
-    setUserRole(isAdmin ? 'admin' : 'user');
+    const isAdmin = phoneNumber.includes("admin");
+    setUserRole(isAdmin ? "admin" : "user");
   };
 }
 ```
@@ -243,21 +248,25 @@ function AdminDashboard() {
 ## 🚀 **Преимущества использования**
 
 ### **1. Централизованное управление**
+
 - Все состояние аутентификации в одном месте
 - Легко отслеживать изменения
 - Простое тестирование
 
 ### **2. Типобезопасность**
+
 - Полная типизация TypeScript
 - Автодополнение в IDE
 - Предотвращение ошибок
 
 ### **3. Переиспользование**
+
 - Один хук для всего приложения
 - Консистентное поведение
 - Легкое обновление логики
 
 ### **4. Производительность**
+
 - Оптимизированные ре-рендеры
 - Кэширование состояния
 - Эффективные обновления
@@ -280,11 +289,11 @@ const checkUserRole = async (uid: string) => {
 ```typescript
 // В useAuth.ts
 const getAuthToken = () => {
-  return localStorage.getItem('authToken');
+  return localStorage.getItem("authToken");
 };
 
 const setAuthToken = (token: string) => {
-  localStorage.setItem('authToken', token);
+  localStorage.setItem("authToken", token);
 };
 ```
 
@@ -293,7 +302,7 @@ const setAuthToken = (token: string) => {
 ```typescript
 // middleware.ts
 export function middleware(request: NextRequest) {
-  const token = request.headers.get('authorization');
+  const token = request.headers.get("authorization");
   // Проверка токена и роли
 }
 ```
@@ -310,13 +319,13 @@ export function middleware(request: NextRequest) {
 
 ```typescript
 // test/useAuth.test.ts
-import { renderHook } from '@testing-library/react';
-import { useAuth } from '@/app/hooks/useAuth';
+import { renderHook } from "@testing-library/react";
+import { useAuth } from "@/app/hooks/useAuth";
 
-test('should return correct auth state', () => {
+test("should return correct auth state", () => {
   const { result } = renderHook(() => useAuth());
-  
+
   expect(result.current.loading).toBe(true);
   expect(result.current.isAuthenticated).toBe(false);
 });
-``` 
+```

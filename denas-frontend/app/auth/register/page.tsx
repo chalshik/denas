@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@heroui/button';
-import RegisterForm from '@/components/forms/RegisterForm';
+import React from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@heroui/button";
+
+import RegisterForm from "@/components/forms/RegisterForm";
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const handleSwitchToLogin = () => {
-    router.push('/auth/login');
+    router.push("/auth/login");
   };
 
   return (
@@ -23,15 +24,11 @@ export default function RegisterPage() {
             Enter your phone number and any password (minimum 3 characters)
           </p>
         </div>
-        
+
         <RegisterForm onSwitchToLogin={handleSwitchToLogin} />
-        
+
         <div className="text-center">
-          <Button
-            variant="light"
-            size="sm"
-            onPress={() => router.push('/')}
-          >
+          <Button size="sm" variant="light" onPress={() => router.push("/")}>
             Back to Home
           </Button>
         </div>

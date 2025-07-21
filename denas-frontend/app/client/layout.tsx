@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@heroui/button';
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from '@heroui/navbar';
-import { useRouter, usePathname } from 'next/navigation';
+import React from "react";
+import { Button } from "@heroui/button";
+import { Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@heroui/navbar";
+import { useRouter, usePathname } from "next/navigation";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ClientLayout({
   children,
@@ -18,16 +19,16 @@ export default function ClientLayout({
   const handleLogout = async () => {
     try {
       await signOut();
-      router.push('/');
+      router.push("/");
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
   const navItems = [
-    { label: 'Catalog', path: '/client/catalog', icon: '🛍️' },
-    { label: 'Favorites', path: '/client/favorites', icon: '❤️' },
-    { label: 'Cart', path: '/client/cart', icon: '🛒' },
+    { label: "Catalog", path: "/client/catalog", icon: "🛍️" },
+    { label: "Favorites", path: "/client/favorites", icon: "❤️" },
+    { label: "Cart", path: "/client/cart", icon: "🛒" },
   ];
 
   return (
@@ -37,15 +38,15 @@ export default function ClientLayout({
         <NavbarBrand>
           <h1 className="text-2xl font-bold text-gray-900">Denas</h1>
         </NavbarBrand>
-        
+
         <NavbarContent className="hidden sm:flex gap-4" justify="center">
           {navItems.map((item) => (
             <NavbarItem key={item.path}>
               <Button
-                variant={pathname === item.path ? 'solid' : 'light'}
-                color={pathname === item.path ? 'primary' : 'default'}
-                onPress={() => router.push(item.path)}
+                color={pathname === item.path ? "primary" : "default"}
                 startContent={<span>{item.icon}</span>}
+                variant={pathname === item.path ? "solid" : "light"}
+                onPress={() => router.push(item.path)}
               >
                 {item.label}
               </Button>
@@ -55,14 +56,8 @@ export default function ClientLayout({
 
         <NavbarContent justify="end">
           <NavbarItem className="flex items-center gap-2">
-            <span className="text-gray-600 text-sm">
-              {user?.phone}
-            </span>
-            <Button 
-              variant="bordered" 
-              size="sm"
-              onPress={handleLogout}
-            >
+            <span className="text-gray-600 text-sm">{user?.phone}</span>
+            <Button size="sm" variant="bordered" onPress={handleLogout}>
               Logout
             </Button>
           </NavbarItem>
@@ -75,11 +70,11 @@ export default function ClientLayout({
           {navItems.map((item) => (
             <Button
               key={item.path}
-              variant={pathname === item.path ? 'solid' : 'light'}
-              color={pathname === item.path ? 'primary' : 'default'}
-              size="sm"
-              onPress={() => router.push(item.path)}
               className="flex-col h-12 min-w-0"
+              color={pathname === item.path ? "primary" : "default"}
+              size="sm"
+              variant={pathname === item.path ? "solid" : "light"}
+              onPress={() => router.push(item.path)}
             >
               <span className="text-lg">{item.icon}</span>
               <span className="text-xs">{item.label}</span>
@@ -89,9 +84,7 @@ export default function ClientLayout({
       </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        {children}
-      </main>
+      <main className="container mx-auto px-4 py-6">{children}</main>
     </div>
   );
-} 
+}

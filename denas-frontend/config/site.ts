@@ -23,4 +23,4 @@ export const siteConfig = {
     github: "https://github.com",
     docs: "/docs",
   },
-}; 
+};

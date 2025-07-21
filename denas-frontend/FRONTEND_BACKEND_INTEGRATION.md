@@ -9,6 +9,7 @@ The frontend has been successfully updated to match the new backend API endpoint
 ### 1. **Updated Types** (`types/index.ts`)
 
 **Added:**
+
 - `AvailabilityType` enum with IN_STOCK, PRE_ORDER, DISCONTINUED
 - `ProductCatalog` - Lightweight product model for listings
 - `ProductWithDetails` - Full product with category and images
@@ -17,25 +18,27 @@ The frontend has been successfully updated to match the new backend API endpoint
 - Updated `ProductCreate` to support `image_urls` array instead of single `image_url`
 
 **Before:**
+
 ```typescript
 interface ProductCreate {
   name: string;
   description?: string;
   price: number;
   category_id: number;
-  image_url?: string;  // Single image
+  image_url?: string; // Single image
   stock_quantity?: number;
 }
 ```
 
 **After:**
+
 ```typescript
 interface ProductCreate {
   name: string;
   description?: string;
   price: number;
   category_id: number;
-  image_urls?: string[];  // Multiple images
+  image_urls?: string[]; // Multiple images
   stock_quantity?: number;
   availability_type?: AvailabilityType;
   preorder_available_date?: string;
@@ -46,6 +49,7 @@ interface ProductCreate {
 ### 2. **Enhanced useProducts Hook** (`hooks/useProducts.ts`)
 
 **New Features:**
+
 - `fetchProductsCatalog(filters)` - Advanced catalog with filtering
 - `fetchFeaturedProducts(limit)` - Get featured products
 - `searchProducts(query, skip, limit)` - Search functionality
@@ -53,25 +57,28 @@ interface ProductCreate {
 - `getByCategory(categoryId, skip, limit)` - Category filtering with pagination
 
 **Before:**
+
 ```typescript
 const { products, fetchProducts, createProduct } = useProducts();
 ```
 
 **After:**
+
 ```typescript
-const { 
-  products, 
-  fetchProductsCatalog, 
+const {
+  products,
+  fetchProductsCatalog,
   fetchFeaturedProducts,
   searchProducts,
   getProductDetails,
-  getByCategory 
+  getByCategory,
 } = useProducts();
 ```
 
 ### 3. **Enhanced useCategories Hook** (`hooks/useCategories.ts`)
 
 **New Features:**
+
 - `getCategoryById(id)` - Get specific category
 - `searchCategories(searchTerm)` - Search categories
 - `createCategory(data)` - Create new category (admin)
@@ -79,11 +86,13 @@ const {
 - `deleteCategory(id)` - Delete category (admin)
 
 **Fixed Endpoint:**
+
 - Changed from `/categories/${id}/products` to `/categories/${id}/with-products`
 
 ### 4. **New useProductCatalog Hook** (`hooks/useProductCatalog.ts`)
 
 **Comprehensive E-commerce Features:**
+
 - Advanced filtering with price range, category, availability
 - Search functionality
 - Pagination with metadata (has_next, has_previous, total)
@@ -92,14 +101,15 @@ const {
 - Featured products support
 
 **Usage Example:**
+
 ```typescript
-const { 
-  products, 
-  pagination, 
-  fetchCatalog, 
+const {
+  products,
+  pagination,
+  fetchCatalog,
   createFilters,
   fetchNextPage,
-  fetchPreviousPage
+  fetchPreviousPage,
 } = useProductCatalog();
 
 // Advanced filtering
@@ -110,7 +120,7 @@ const filters = createFilters({
   priceRange: { min: 10, max: 100 },
   search: "phone",
   sortBy: "price",
-  sortOrder: "asc"
+  sortOrder: "asc",
 });
 
 await fetchCatalog(filters);
@@ -119,6 +129,7 @@ await fetchCatalog(filters);
 ## 🏪 **E-commerce Features Now Supported**
 
 ### **Product Catalog**
+
 - ✅ Filtering by price range (`min_price`, `max_price`)
 - ✅ Category filtering (`category_id`)
 - ✅ Availability filtering (`availability_type`)
@@ -127,6 +138,7 @@ await fetchCatalog(filters);
 - ✅ Pagination with metadata (`page`, `size`, `has_next`, `has_previous`)
 
 ### **Product Management**
+
 - ✅ Multiple image URLs support
 - ✅ Stock quantity tracking
 - ✅ Availability types (in stock, pre-order, discontinued)
@@ -134,6 +146,7 @@ await fetchCatalog(filters);
 - ✅ Pre-order date support
 
 ### **Category Management**
+
 - ✅ Category CRUD operations
 - ✅ Category search functionality
 - ✅ Categories with products support
@@ -141,31 +154,34 @@ await fetchCatalog(filters);
 ## 📊 **API Endpoint Mapping**
 
 ### **Products**
-| Frontend Method | Backend Endpoint | Purpose |
-|----------------|------------------|---------|
-| `fetchProductsCatalog(filters)` | `GET /products/catalog` | Paginated catalog with filters |
-| `fetchFeaturedProducts(limit)` | `GET /products/featured` | Featured products |
-| `searchProducts(query)` | `GET /products/search` | Search products |
-| `getProductDetails(id)` | `GET /products/{id}` | Full product details |
-| `getByCategory(categoryId)` | `GET /products/category/{id}` | Products by category |
-| `createProduct(data)` | `POST /products/` | Create product (admin) |
-| `updateProduct(id, data)` | `PUT /products/{id}` | Update product (admin) |
-| `deleteProduct(id)` | `DELETE /products/{id}` | Delete product (admin) |
+
+| Frontend Method                 | Backend Endpoint              | Purpose                        |
+| ------------------------------- | ----------------------------- | ------------------------------ |
+| `fetchProductsCatalog(filters)` | `GET /products/catalog`       | Paginated catalog with filters |
+| `fetchFeaturedProducts(limit)`  | `GET /products/featured`      | Featured products              |
+| `searchProducts(query)`         | `GET /products/search`        | Search products                |
+| `getProductDetails(id)`         | `GET /products/{id}`          | Full product details           |
+| `getByCategory(categoryId)`     | `GET /products/category/{id}` | Products by category           |
+| `createProduct(data)`           | `POST /products/`             | Create product (admin)         |
+| `updateProduct(id, data)`       | `PUT /products/{id}`          | Update product (admin)         |
+| `deleteProduct(id)`             | `DELETE /products/{id}`       | Delete product (admin)         |
 
 ### **Categories**
-| Frontend Method | Backend Endpoint | Purpose |
-|----------------|------------------|---------|
-| `fetchCategories()` | `GET /categories/` | All categories |
-| `getCategoryById(id)` | `GET /categories/{id}` | Specific category |
-| `getWithProducts(id)` | `GET /categories/{id}/with-products` | Category with products |
-| `searchCategories(term)` | `GET /categories/search/{term}` | Search categories |
-| `createCategory(data)` | `POST /categories/` | Create category (admin) |
-| `updateCategory(id, data)` | `PUT /categories/{id}` | Update category (admin) |
-| `deleteCategory(id)` | `DELETE /categories/{id}` | Delete category (admin) |
+
+| Frontend Method            | Backend Endpoint                     | Purpose                 |
+| -------------------------- | ------------------------------------ | ----------------------- |
+| `fetchCategories()`        | `GET /categories/`                   | All categories          |
+| `getCategoryById(id)`      | `GET /categories/{id}`               | Specific category       |
+| `getWithProducts(id)`      | `GET /categories/{id}/with-products` | Category with products  |
+| `searchCategories(term)`   | `GET /categories/search/{term}`      | Search categories       |
+| `createCategory(data)`     | `POST /categories/`                  | Create category (admin) |
+| `updateCategory(id, data)` | `PUT /categories/{id}`               | Update category (admin) |
+| `deleteCategory(id)`       | `DELETE /categories/{id}`            | Delete category (admin) |
 
 ## 🔧 **Usage Examples**
 
 ### **Basic Product Catalog**
+
 ```typescript
 const { products, pagination, fetchCatalog } = useProductCatalog();
 
@@ -178,30 +194,29 @@ await fetchCatalog({
   max_price: 100,
   search: "phone",
   sort_by: "price",
-  sort_order: "asc"
+  sort_order: "asc",
 });
 ```
 
 ### **Featured Products**
+
 ```typescript
 const { fetchFeaturedProducts } = useProductCatalog();
 const featured = await fetchFeaturedProducts(10);
 ```
 
 ### **Product Search**
+
 ```typescript
 const { searchProducts } = useProductCatalog();
 const results = await searchProducts("laptop", 0, 20);
 ```
 
 ### **Category Management**
+
 ```typescript
-const { 
-  categories, 
-  fetchCategories, 
-  createCategory,
-  getWithProducts 
-} = useCategories();
+const { categories, fetchCategories, createCategory, getWithProducts } =
+  useCategories();
 
 // Get all categories
 await fetchCategories();
@@ -231,6 +246,7 @@ All endpoints automatically include Firebase authentication tokens through the e
 ## 📱 **Ready for Production**
 
 The frontend is now fully compatible with the new backend API and provides a complete e-commerce solution with:
+
 - Product catalog with advanced filtering
 - Search functionality
 - Category management

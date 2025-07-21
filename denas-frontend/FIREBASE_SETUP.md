@@ -49,4 +49,4 @@ The authentication system supports:
 
 - Login page: `/auth/login`
 - Register page: `/auth/register`
-- After successful authentication, users are redirected to `/` 
+- After successful authentication, users are redirected to `/`

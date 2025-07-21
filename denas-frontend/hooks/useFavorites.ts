@@ -1,15 +1,28 @@
-import { useApi } from "./useApi";
 import { api } from "../lib/api";
-import { FavoriteWithProduct, FavoriteCreate, FavoriteCheckResponse } from "../types";
+import {
+  FavoriteWithProduct,
+  FavoriteCreate,
+  FavoriteCheckResponse,
+} from "../types";
+
+import { useApi } from "./useApi";
 
 export function useFavorites() {
   const apiHook = useApi<FavoriteWithProduct>();
 
-  const fetchMyFavorites = async (skip: number = 0, limit: number = 100): Promise<FavoriteWithProduct[]> => {
+  const fetchMyFavorites = async (
+    skip: number = 0,
+    limit: number = 100,
+  ): Promise<FavoriteWithProduct[]> => {
     apiHook.setLoading(true);
     try {
-      const favorites = await api.get<FavoriteWithProduct[]>("/favorites/my-favorites", { skip, limit });
+      const favorites = await api.get<FavoriteWithProduct[]>(
+        "/favorites/my-favorites",
+        { skip, limit },
+      );
+
       apiHook.setData(favorites);
+
       return favorites;
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to fetch favorites");
@@ -22,11 +35,12 @@ export function useFavorites() {
   const addToFavorites = async (productId: number): Promise<void> => {
     try {
       const favoriteData: FavoriteCreate = { product_id: productId };
+
       await api.post("/favorites", favoriteData);
-      
+
       // Don't refresh entire list - UI state is managed locally now
     } catch (error: any) {
-      if (error.message?.includes('already in favorites')) {
+      if (error.message?.includes("already in favorites")) {
         // Product already favorited - not really an error
         return;
       }
@@ -38,7 +52,7 @@ export function useFavorites() {
   const removeFromFavorites = async (favoriteId: number): Promise<void> => {
     try {
       await api.delete(`/favorites/${favoriteId}`);
-      
+
       // Don't refresh entire list - UI state is managed locally now
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to remove from favorites");
@@ -46,10 +60,12 @@ export function useFavorites() {
     }
   };
 
-  const removeFromFavoritesByProduct = async (productId: number): Promise<void> => {
+  const removeFromFavoritesByProduct = async (
+    productId: number,
+  ): Promise<void> => {
     try {
       await api.delete(`/favorites/product/${productId}`);
-      
+
       // Don't refresh entire list - UI state is managed locally now
     } catch (error: any) {
       apiHook.setError(error.message || "Failed to remove from favorites");
@@ -57,9 +73,14 @@ export function useFavorites() {
     }
   };
 
-  const checkIsFavorited = async (productId: number): Promise<FavoriteCheckResponse> => {
+  const checkIsFavorited = async (
+    productId: number,
+  ): Promise<FavoriteCheckResponse> => {
     try {
-      const response = await api.get<FavoriteCheckResponse>(`/favorites/product/${productId}/check`);
+      const response = await api.get<FavoriteCheckResponse>(
+        `/favorites/product/${productId}/check`,
+      );
+
       return response;
     } catch (error: any) {
       // If error, assume not favorited
@@ -67,17 +88,20 @@ export function useFavorites() {
         user_id: 0,
         product_id: productId,
         is_favorited: false,
-        favorite_id: undefined
+        favorite_id: undefined,
       };
     }
   };
 
   const getFavoritesCount = async (productId: number): Promise<number> => {
     try {
-      const response = await api.get<{ product_id: number; favorites_count: number }>(`/favorites/product/${productId}/count`);
+      const response = await api.get<{
+        product_id: number;
+        favorites_count: number;
+      }>(`/favorites/product/${productId}/count`);
+
       return response.favorites_count;
     } catch (error: any) {
-      console.warn(`Failed to get favorites count for product ${productId}:`, error.message);
       return 0;
     }
   };
@@ -85,12 +109,14 @@ export function useFavorites() {
   const toggleFavorite = async (productId: number): Promise<boolean> => {
     try {
       const checkResult = await checkIsFavorited(productId);
-      
+
       if (checkResult.is_favorited && checkResult.favorite_id) {
         await removeFromFavorites(checkResult.favorite_id);
+
         return false; // Now not favorited
       } else {
         await addToFavorites(productId);
+
         return true; // Now favorited
       }
     } catch (error: any) {
@@ -110,4 +136,4 @@ export function useFavorites() {
     getFavoritesCount,
     toggleFavorite,
   };
-} 
+}

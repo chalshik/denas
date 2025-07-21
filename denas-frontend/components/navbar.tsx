@@ -1,12 +1,21 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Navbar as HeroNavbar, NavbarBrand, NavbarContent, NavbarItem, NavbarMenu, NavbarMenuToggle, NavbarMenuItem } from '@heroui/navbar';
-import { Button } from '@heroui/button';
-import { Link } from '@heroui/link';
-import { siteConfig } from '@/config/site';
-import { useAuth } from '@/contexts/AuthContext';
+import React from "react";
+import { useRouter } from "next/navigation";
+import {
+  Navbar as HeroNavbar,
+  NavbarBrand,
+  NavbarContent,
+  NavbarItem,
+  NavbarMenu,
+  NavbarMenuToggle,
+  NavbarMenuItem,
+} from "@heroui/navbar";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
+
+import { siteConfig } from "@/config/site";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -19,17 +28,20 @@ export function Navbar() {
     { name: "About", href: "/about" },
   ];
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
 
   return (
-    <HeroNavbar onMenuOpenChange={setIsMenuOpen} className="bg-background/60 backdrop-blur-md">
+    <HeroNavbar
+      className="bg-background/60 backdrop-blur-md"
+      onMenuOpenChange={setIsMenuOpen}
+    >
       <NavbarContent>
         <NavbarMenuToggle
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           className="sm:hidden"
         />
         <NavbarBrand>
-          <Link href="/" className="font-bold text-inherit">
+          <Link className="font-bold text-inherit" href="/">
             {siteConfig.name}
           </Link>
         </NavbarBrand>
@@ -38,11 +50,7 @@ export function Navbar() {
       <NavbarContent className="hidden sm:flex gap-4" justify="center">
         {menuItems.map((item) => (
           <NavbarItem key={item.name}>
-            <Link
-              color="foreground"
-              href={item.href}
-              className="w-full"
-            >
+            <Link className="w-full" color="foreground" href={item.href}>
               {item.name}
             </Link>
           </NavbarItem>
@@ -53,9 +61,7 @@ export function Navbar() {
         {!loading && user ? (
           <>
             <NavbarItem className="hidden sm:flex">
-              <span className="text-sm text-gray-600">
-                {user.phone}
-              </span>
+              <span className="text-sm text-gray-600">{user.phone}</span>
             </NavbarItem>
             {isAdmin && (
               <NavbarItem>
@@ -75,7 +81,7 @@ export function Navbar() {
                 variant="bordered"
                 onPress={async () => {
                   await signOut();
-                  router.push('/');
+                  router.push("/");
                 }}
               >
                 Sign Out
@@ -112,10 +118,10 @@ export function Navbar() {
         {menuItems.map((item, index) => (
           <NavbarMenuItem key={`${item.name}-${index}`}>
             <Link
+              className="w-full"
               color="foreground"
               href={item.href}
               size="lg"
-              className="w-full"
             >
               {item.name}
             </Link>
@@ -132,10 +138,10 @@ export function Navbar() {
               <NavbarMenuItem>
                 <Button
                   as={Link}
+                  className="w-full"
                   color="secondary"
                   href="/admin/products"
                   variant="flat"
-                  className="w-full"
                 >
                   Admin Panel
                 </Button>
@@ -143,12 +149,12 @@ export function Navbar() {
             )}
             <NavbarMenuItem>
               <Button
+                className="w-full"
                 color="danger"
                 variant="bordered"
-                className="w-full"
                 onPress={async () => {
                   await signOut();
-                  router.push('/');
+                  router.push("/");
                 }}
               >
                 Sign Out
@@ -160,10 +166,10 @@ export function Navbar() {
             <NavbarMenuItem>
               <Button
                 as={Link}
+                className="w-full"
                 color="primary"
                 href="/auth/login"
                 variant="flat"
-                className="w-full"
               >
                 Sign In
               </Button>
@@ -171,10 +177,10 @@ export function Navbar() {
             <NavbarMenuItem>
               <Button
                 as={Link}
+                className="w-full"
                 color="primary"
                 href="/auth/register"
                 variant="bordered"
-                className="w-full"
               >
                 Sign Up
               </Button>
@@ -184,4 +190,4 @@ export function Navbar() {
       </NavbarMenu>
     </HeroNavbar>
   );
-} 
+}
