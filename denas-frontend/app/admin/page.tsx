@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Button } from '@heroui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import React from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -12,33 +13,33 @@ export default function AdminDashboard() {
 
   const dashboardCards = [
     {
-      title: 'Products Management',
-      description: 'Add, edit, and manage your product catalog',
-      icon: '🛍️',
-      href: '/admin/products',
-      color: 'bg-blue-50 border-blue-200'
+      title: "Products Management",
+      description: "Add, edit, and manage your product catalog",
+      icon: "🛍️",
+      href: "/admin/products",
+      color: "bg-blue-50 border-blue-200",
     },
     {
-      title: 'Customer Chats',
-      description: 'View and respond to customer inquiries',
-      icon: '💬',
-      href: '/admin/chats',
-      color: 'bg-green-50 border-green-200'
+      title: "Customer Chats",
+      description: "View and respond to customer inquiries",
+      icon: "💬",
+      href: "/admin/chats",
+      color: "bg-green-50 border-green-200",
     },
     {
-      title: 'Analytics',
-      description: 'View sales reports and business insights',
-      icon: '📊',
-      href: '/admin/analytics',
-      color: 'bg-purple-50 border-purple-200'
+      title: "Analytics",
+      description: "View sales reports and business insights",
+      icon: "📊",
+      href: "/admin/analytics",
+      color: "bg-purple-50 border-purple-200",
     },
     {
-      title: 'Settings',
-      description: 'Configure system settings and preferences',
-      icon: '⚙️',
-      href: '/admin/settings',
-      color: 'bg-orange-50 border-orange-200'
-    }
+      title: "Settings",
+      description: "Configure system settings and preferences",
+      icon: "⚙️",
+      href: "/admin/settings",
+      color: "bg-orange-50 border-orange-200",
+    },
   ];
 
   return (
@@ -47,7 +48,8 @@ export default function AdminDashboard() {
       <div className="border-b border-gray-200 pb-6">
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-gray-600 mt-2">
-          Welcome back, {user?.phone}! Manage your e-commerce platform from here.
+          Welcome back, {user?.phone}! Manage your e-commerce platform from
+          here.
         </p>
         <div className="mt-2">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -110,22 +112,24 @@ export default function AdminDashboard() {
       {/* Management Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {dashboardCards.map((card) => (
-          <Card 
-            key={card.title} 
+          <Card
+            key={card.title}
             className={`hover:shadow-lg transition-shadow ${card.color}`}
           >
             <CardHeader className="flex gap-3">
               <div className="text-3xl">{card.icon}</div>
               <div className="flex flex-col">
-                <h3 className="text-lg font-semibold text-gray-900">{card.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {card.title}
+                </h3>
               </div>
             </CardHeader>
             <CardBody className="pt-0">
               <p className="text-gray-600 mb-4">{card.description}</p>
-              <Button 
-                color="primary" 
-                variant="flat" 
+              <Button
+                color="primary"
                 size="sm"
+                variant="flat"
                 onPress={() => router.push(card.href)}
               >
                 Open {card.title}
@@ -147,7 +151,9 @@ export default function AdminDashboard() {
                 <div className="text-xl">📦</div>
                 <div>
                   <p className="font-medium">System Ready</p>
-                  <p className="text-sm text-gray-600">Admin panel is configured and ready to use</p>
+                  <p className="text-sm text-gray-600">
+                    Admin panel is configured and ready to use
+                  </p>
                 </div>
               </div>
               <span className="text-xs text-gray-500">Now</span>
@@ -157,4 +163,4 @@ export default function AdminDashboard() {
       </Card>
     </div>
   );
-} 
+}

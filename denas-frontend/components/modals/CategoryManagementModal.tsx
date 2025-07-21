@@ -1,19 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Modal, 
-  ModalContent, 
-  ModalHeader, 
-  ModalBody, 
-  ModalFooter 
-} from '@heroui/modal';
-import { Button } from '@heroui/button';
-import { Input } from '@heroui/input';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/table';
-import { useForm } from '@/hooks/useForm';
-import { useCategories } from '@/hooks/useCategories';
-import { Category, CategoryWithMetadata } from '@/types';
+import React, { useState, useEffect } from "react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
+
+import { useForm } from "@/hooks/useForm";
+import { useCategories } from "@/hooks/useCategories";
+import { CategoryWithMetadata } from "@/types";
 
 interface CategoryManagementModalProps {
   isOpen: boolean;
@@ -21,24 +29,24 @@ interface CategoryManagementModalProps {
   onSuccess?: () => void;
 }
 
-export default function CategoryManagementModal({ 
-  isOpen, 
+export default function CategoryManagementModal({
+  isOpen,
   onClose,
-  onSuccess
+  onSuccess,
 }: CategoryManagementModalProps) {
-  const { 
-    loading, 
-    fetchCategoriesWithMetadata, 
-    createCategory, 
-    deleteCategory 
+  const {
+    loading,
+    fetchCategoriesWithMetadata,
+    createCategory,
+    deleteCategory,
   } = useCategories();
-  
+
   const [categories, setCategories] = useState<CategoryWithMetadata[]>([]);
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [creating, setCreating] = useState(false);
-  
+
   const { form, handleInput, resetForm } = useForm({
-    name: '',
+    name: "",
   });
 
   // Fetch categories when modal opens
@@ -51,9 +59,10 @@ export default function CategoryManagementModal({
   const loadCategories = async () => {
     try {
       const categoriesWithMetadata = await fetchCategoriesWithMetadata();
+
       setCategories(categoriesWithMetadata);
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      console.error("Failed to load categories:", error);
     }
   };
 
@@ -71,31 +80,43 @@ export default function CategoryManagementModal({
       await loadCategories(); // Refresh the list
       onSuccess?.();
     } catch (error) {
-      console.error('Failed to create category:', error);
+      console.error("Failed to create category:", error);
     } finally {
       setCreating(false);
     }
   };
 
-  const handleDeleteCategory = async (categoryId: number, categoryName: string, canDelete: boolean) => {
+  const handleDeleteCategory = async (
+    categoryId: number,
+    categoryName: string,
+    canDelete: boolean,
+  ) => {
     if (!canDelete) {
       return; // Should not be called for non-deletable categories
     }
 
-    if (window.confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
-      setDeletingIds(prev => new Set(prev).add(categoryId));
+    if (
+      window.confirm(
+        `Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`,
+      )
+    ) {
+      setDeletingIds((prev) => new Set(prev).add(categoryId));
       try {
         await deleteCategory(categoryId);
         await loadCategories(); // Refresh the list
         onSuccess?.();
       } catch (error) {
-        console.error('Failed to delete category:', error);
+        console.error("Failed to delete category:", error);
         // Show user-friendly error message
-        alert(error instanceof Error ? error.message : 'Failed to delete category');
+        alert(
+          error instanceof Error ? error.message : "Failed to delete category",
+        );
       } finally {
-        setDeletingIds(prev => {
+        setDeletingIds((prev) => {
           const newSet = new Set(prev);
+
           newSet.delete(categoryId);
+
           return newSet;
         });
       }
@@ -109,52 +130,58 @@ export default function CategoryManagementModal({
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={handleClose}
-      size="3xl"
-      scrollBehavior="inside"
+    <Modal
+      isOpen={isOpen}
       placement="center"
+      scrollBehavior="inside"
+      size="3xl"
+      onClose={handleClose}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold">Manage Categories</h2>
-          <p className="text-sm text-gray-500">Add new categories or remove existing ones</p>
+          <p className="text-sm text-gray-500">
+            Add new categories or remove existing ones
+          </p>
         </ModalHeader>
-        
+
         <ModalBody className="py-6">
           {/* Add New Category Section */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Category</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Add New Category
+            </h3>
             <div className="space-y-4">
               <Input
-                label="Category Name"
-                placeholder="Enter category name"
-                name="name"
-                value={form.name}
-                onChange={handleInput}
-                variant="bordered"
                 isRequired
+                label="Category Name"
+                name="name"
+                placeholder="Enter category name"
+                value={form.name}
+                variant="bordered"
+                onChange={handleInput}
               />
               <Button
-                color="primary"
-                onPress={handleCreateCategory}
-                isLoading={creating}
-                isDisabled={!form.name.trim() || creating}
                 className="w-full"
+                color="primary"
+                isDisabled={!form.name.trim() || creating}
+                isLoading={creating}
+                onPress={handleCreateCategory}
               >
-                {creating ? 'Creating...' : 'Add Category'}
+                {creating ? "Creating..." : "Add Category"}
               </Button>
             </div>
           </div>
 
           {/* Existing Categories Section */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Existing Categories</h3>
-            
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Existing Categories
+            </h3>
+
             {loading ? (
               <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                 <p className="mt-2 text-gray-500">Loading categories...</p>
               </div>
             ) : categories.length === 0 ? (
@@ -163,13 +190,13 @@ export default function CategoryManagementModal({
               </div>
             ) : (
               <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <Table 
-                  aria-label="Categories table"
+                <Table
                   removeWrapper
+                  aria-label="Categories table"
                   classNames={{
                     th: "bg-gray-100 text-left text-xs font-medium text-gray-700 uppercase tracking-wider px-4 py-3 border-b border-gray-200",
                     td: "px-4 py-3 text-sm text-gray-900 border-b border-gray-100",
-                    tbody: "bg-white"
+                    tbody: "bg-white",
                   }}
                 >
                   <TableHeader>
@@ -187,28 +214,44 @@ export default function CategoryManagementModal({
                         </TableCell>
                         <TableCell>
                           <div className="text-gray-600">
-                            {category.product_count !== undefined ? 
-                              `${category.product_count} product${category.product_count !== 1 ? 's' : ''}` : 
-                              '-'
-                            }
-                            {!category.can_delete && category.product_count && category.product_count > 0 && (
-                              <div className="text-xs text-amber-600 mt-1">
-                                Cannot delete - has products
-                              </div>
-                            )}
+                            {category.product_count !== undefined
+                              ? `${category.product_count} product${category.product_count !== 1 ? "s" : ""}`
+                              : "-"}
+                            {!category.can_delete &&
+                              category.product_count &&
+                              category.product_count > 0 && (
+                                <div className="text-xs text-amber-600 mt-1">
+                                  Cannot delete - has products
+                                </div>
+                              )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <Button
-                            size="sm"
                             color="danger"
-                            variant="flat"
-                            onPress={() => handleDeleteCategory(category.id, category.name, category.can_delete)}
+                            isDisabled={
+                              deletingIds.has(category.id) ||
+                              !category.can_delete
+                            }
                             isLoading={deletingIds.has(category.id)}
-                            isDisabled={deletingIds.has(category.id) || !category.can_delete}
-                            title={!category.can_delete ? 'Cannot delete category with products' : 'Delete category'}
+                            size="sm"
+                            title={
+                              !category.can_delete
+                                ? "Cannot delete category with products"
+                                : "Delete category"
+                            }
+                            variant="flat"
+                            onPress={() =>
+                              handleDeleteCategory(
+                                category.id,
+                                category.name,
+                                category.can_delete,
+                              )
+                            }
                           >
-                            {deletingIds.has(category.id) ? 'Deleting...' : 'Delete'}
+                            {deletingIds.has(category.id)
+                              ? "Deleting..."
+                              : "Delete"}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -219,17 +262,13 @@ export default function CategoryManagementModal({
             )}
           </div>
         </ModalBody>
-        
+
         <ModalFooter>
-          <Button 
-            color="default" 
-            variant="flat" 
-            onPress={handleClose}
-          >
+          <Button color="default" variant="flat" onPress={handleClose}>
             Close
           </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
   );
-} 
+}

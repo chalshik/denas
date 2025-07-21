@@ -1,11 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@heroui/button';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Spinner } from '@heroui/spinner';
-import { useRouter } from 'next/navigation';
+import React from "react";
+import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Spinner } from "@heroui/spinner";
+import { useRouter } from "next/navigation";
+
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
   const { user, loading, error } = useAuth();
@@ -13,12 +14,12 @@ export default function Home() {
 
   // Auto-redirect users based on role
   React.useEffect(() => {
-    if (user && user.role === 'Admin') {
-      console.log('Admin user detected, redirecting to admin panel');
-      router.push('/admin');
-    } else if (user && user.role !== 'Admin') {
-      console.log('Customer user detected, redirecting to client dashboard');
-      router.push('/client');
+    if (user && user.role === "Admin") {
+      console.log("Admin user detected, redirecting to admin panel");
+      router.push("/admin");
+    } else if (user && user.role !== "Admin") {
+      console.log("Customer user detected, redirecting to client dashboard");
+      router.push("/client");
     }
   }, [user, router]);
 
@@ -44,10 +45,7 @@ export default function Home() {
           </CardHeader>
           <CardBody>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button 
-              color="primary" 
-              onPress={() => router.push('/auth/login')}
-            >
+            <Button color="primary" onPress={() => router.push("/auth/login")}>
               Go to Login
             </Button>
           </CardBody>
@@ -77,7 +75,8 @@ export default function Home() {
               </CardHeader>
               <CardBody>
                 <p className="text-gray-600">
-                  Browse our wide selection of products and find exactly what you need.
+                  Browse our wide selection of products and find exactly what
+                  you need.
                 </p>
               </CardBody>
             </Card>
@@ -88,7 +87,8 @@ export default function Home() {
               </CardHeader>
               <CardBody>
                 <p className="text-gray-600">
-                  Simple and secure ordering process with multiple payment options.
+                  Simple and secure ordering process with multiple payment
+                  options.
                 </p>
               </CardBody>
             </Card>
@@ -107,17 +107,17 @@ export default function Home() {
 
           <div className="text-center space-y-4">
             <div className="space-x-4">
-              <Button 
-                color="primary" 
+              <Button
+                color="primary"
                 size="lg"
-                onPress={() => router.push('/auth/login')}
+                onPress={() => router.push("/auth/login")}
               >
                 Sign In
               </Button>
-              <Button 
-                variant="bordered" 
+              <Button
                 size="lg"
-                onPress={() => router.push('/auth/register')}
+                variant="bordered"
+                onPress={() => router.push("/auth/register")}
               >
                 Create Account
               </Button>
@@ -131,4 +131,4 @@ export default function Home() {
   // If user is authenticated, they will be redirected by useEffect
   // This should not render for authenticated users
   return null;
-} 
+}

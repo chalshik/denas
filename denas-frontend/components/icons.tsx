@@ -7,14 +7,20 @@ interface IconProps {
   className?: string;
 }
 
-export const GithubIcon = ({ size = 24, width, height, className, ...props }: IconProps) => (
+export const GithubIcon = ({
+  size = 24,
+  width,
+  height,
+  className,
+  ...props
+}: IconProps) => (
   <svg
-    height={size || height}
-    width={size || width}
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
     className={className}
+    fill="none"
+    height={size || height}
+    viewBox="0 0 24 24"
+    width={size || width}
+    xmlns="http://www.w3.org/2000/svg"
     {...props}
   >
     <path
@@ -22,4 +28,4 @@ export const GithubIcon = ({ size = 24, width, height, className, ...props }: Ic
       fill="currentColor"
     />
   </svg>
-); 
+);

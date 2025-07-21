@@ -1,11 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Button } from '@heroui/button';
-import { Input } from '@heroui/input';
-import { Switch } from '@heroui/switch';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Select, SelectItem } from '@heroui/select';
+import React from "react";
 
 export default function AdminSettingsPage() {
   return (

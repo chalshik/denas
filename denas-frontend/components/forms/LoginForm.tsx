@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { Button } from '@heroui/button';
-import { Input } from '@heroui/input';
-import { Form } from '@heroui/form';
-import { useForm } from '@/hooks/useForm';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import { Form } from "@heroui/form";
+
+import { auth } from "@/lib/firebase";
+import { useForm } from "@/hooks/useForm";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 interface LoginFormProps {
   onSwitchToRegister?: () => void;
@@ -17,65 +18,70 @@ interface LoginFormProps {
 
 export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
   const { form, setForm } = useForm({
-    phoneNumber: '',
-    password: '',
+    phoneNumber: "",
+    password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const router = useRouter();
   const { initializeSession } = useAuth();
 
   // Convert phone number to email format for Firebase
   const phoneToEmail = (phone: string): string => {
-    const cleanPhone = phone.replace(/\D/g, '');
+    const cleanPhone = phone.replace(/\D/g, "");
+
     return `${cleanPhone}@phone.auth`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!form.phoneNumber.trim() || !form.password.trim()) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
+
       return;
     }
 
     setIsLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
       const email = phoneToEmail(form.phoneNumber);
-      
+
       // Sign in with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, form.password);
-      
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        form.password,
+      );
+
       // Initialize session with backend (cookies + user data)
       await initializeSession(userCredential.user);
-      
+
       // Get the user data to check role and redirect appropriately
       const userData = await api.getCurrentUser();
-      
-      console.log('User signed in successfully, role:', userData.role);
-      
+
+      console.log("User signed in successfully, role:", userData.role);
+
       // Redirect based on user role
-      if (userData.role === 'Admin') {
-        console.log('Redirecting admin to admin panel');
-        router.push('/admin');
+      if (userData.role === "Admin") {
+        console.log("Redirecting admin to admin panel");
+        router.push("/admin");
       } else {
-        console.log('Redirecting user to dashboard');
-        router.push('/');
+        console.log("Redirecting user to dashboard");
+        router.push("/");
       }
-      
     } catch (error: any) {
-      console.error('Login error:', error);
-      
-      if (error.code === 'auth/user-not-found') {
-        setError('User not found. Please register first.');
-      } else if (error.code === 'auth/wrong-password') {
-        setError('Invalid password.');
-      } else if (error.code === 'auth/invalid-email') {
-        setError('Invalid phone number format.');
+      console.error("Login error:", error);
+
+      if (error.code === "auth/user-not-found") {
+        setError("User not found. Please register first.");
+      } else if (error.code === "auth/wrong-password") {
+        setError("Invalid password.");
+      } else if (error.code === "auth/invalid-email") {
+        setError("Invalid phone number format.");
       } else {
-        setError(error.message || 'Login failed');
+        setError(error.message || "Login failed");
       }
     } finally {
       setIsLoading(false);
@@ -90,53 +96,53 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
             {error}
           </div>
         )}
-        
+
         <Input
+          isRequired
+          classNames={{
+            label: "text-gray-700 font-medium mb-2",
+            input: "text-gray-900",
+            inputWrapper: "border-gray-300",
+          }}
           label="Phone Number"
           labelPlacement="outside"
           placeholder="Enter your phone number"
           value={form.phoneNumber}
-          onValueChange={val => setForm(f => ({ ...f, phoneNumber: val }))}
-          isRequired
           variant="bordered"
+          onValueChange={(val) => setForm((f) => ({ ...f, phoneNumber: val }))}
+        />
+
+        <Input
+          isRequired
           classNames={{
             label: "text-gray-700 font-medium mb-2",
             input: "text-gray-900",
-            inputWrapper: "border-gray-300"
+            inputWrapper: "border-gray-300",
           }}
-        />
-        
-        <Input
           label="Password"
           labelPlacement="outside"
           placeholder="Enter your password"
           type="password"
           value={form.password}
-          onValueChange={val => setForm(f => ({ ...f, password: val }))}
-          isRequired
           variant="bordered"
-          classNames={{
-            label: "text-gray-700 font-medium mb-2",
-            input: "text-gray-900",
-            inputWrapper: "border-gray-300"
-          }}
+          onValueChange={(val) => setForm((f) => ({ ...f, password: val }))}
         />
-        
+
         <Button
-          type="submit"
-          color="primary"
           className="w-full"
+          color="primary"
           isLoading={isLoading}
           size="lg"
+          type="submit"
         >
           Sign In
         </Button>
-        
+
         {onSwitchToRegister && (
           <Button
+            className="w-full"
             type="button"
             variant="light"
-            className="w-full"
             onPress={onSwitchToRegister}
           >
             Don't have an account? Register
@@ -145,4 +151,4 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
       </Form>
     </div>
   );
-} 
+}
