@@ -348,7 +348,10 @@ export default function CreateProductModal({
               {/* Only show preorder date when PRE_ORDER is selected */}
               {form.availability_type === "PRE_ORDER" && (
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label
+                    className="text-sm font-medium mb-2 block"
+                    htmlFor="datepreorder"
+                  >
                     Preorder Available Date
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -435,13 +438,21 @@ export default function CreateProductModal({
 
                 {/* Drag & Drop Upload Zone */}
                 <div
-                  className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  aria-disabled={selectedImages.length >= 5}
+                  aria-label={
+                    selectedImages.length >= 5
+                      ? "Maximum 5 images reached. Remove some images to add more."
+                      : "Upload area. Drag and drop images or press enter to browse files. Supports JPEG, PNG, WebP up to 10MB each. Maximum 5 images."
+                  }
+                  className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     dragActive
                       ? "border-blue-500 bg-blue-50"
                       : selectedImages.length >= 5
                         ? "border-gray-300 bg-gray-50 cursor-not-allowed"
                         : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 cursor-pointer"
                   }`}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     if (selectedImages.length < 5) {
                       document.getElementById("image-upload-input")?.click();
@@ -451,6 +462,15 @@ export default function CreateProductModal({
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
+                  onKeyDown={(e) => {
+                    if (
+                      (e.key === "Enter" || e.key === " ") &&
+                      selectedImages.length < 5
+                    ) {
+                      e.preventDefault();
+                      document.getElementById("image-upload-input")?.click();
+                    }
+                  }}
                 >
                   <Input
                     multiple
@@ -463,12 +483,16 @@ export default function CreateProductModal({
 
                   {dragActive ? (
                     <div className="text-blue-600">
-                      <div className="text-3xl mb-2">📎</div>
+                      <div aria-hidden="true" className="text-3xl mb-2">
+                        📎
+                      </div>
                       <p className="text-lg font-medium">Drop images here</p>
                     </div>
                   ) : selectedImages.length >= 5 ? (
                     <div className="text-gray-400">
-                      <div className="text-3xl mb-2">📸</div>
+                      <div aria-hidden="true" className="text-3xl mb-2">
+                        📸
+                      </div>
                       <p className="text-lg font-medium">
                         Maximum 5 images reached
                       </p>
@@ -476,7 +500,9 @@ export default function CreateProductModal({
                     </div>
                   ) : (
                     <div className="text-gray-600">
-                      <div className="text-3xl mb-2">📷</div>
+                      <div aria-hidden="true" className="text-3xl mb-2">
+                        📷
+                      </div>
                       <p className="text-lg font-medium">
                         Drag & drop images here or click to browse
                       </p>
@@ -485,6 +511,7 @@ export default function CreateProductModal({
                         images
                       </p>
                       <Button
+                        aria-label="Browse files to upload"
                         className="mt-3"
                         color="primary"
                         size="sm"

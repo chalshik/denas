@@ -145,7 +145,7 @@ export default function LoginForm({ onSwitchToRegister }: LoginFormProps) {
             variant="light"
             onPress={onSwitchToRegister}
           >
-            Don't have an account? Register
+            Dont have an account? Register
           </Button>
         )}
       </Form>

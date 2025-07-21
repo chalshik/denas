@@ -14,6 +14,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
+import { Label } from "@headlessui/react";
 
 import ImageModal from "./ImageModal";
 
@@ -22,7 +23,6 @@ import { useCategories } from "@/hooks/useCategories";
 import { useForm } from "@/hooks/useForm";
 import { ProductWithDetails, AvailabilityType } from "@/types";
 import { api } from "@/lib/api";
-import { Label } from "@headlessui/react";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -551,18 +551,29 @@ export default function ProductDetailsModal({
                   {/* Upload Zone - Only in Edit Mode */}
                   {isEditing && (
                     <div className="mb-6">
-                      <label className="text-sm font-medium mb-3 block">
+                      <label
+                        className="text-sm font-medium mb-3 block"
+                        htmlFor="UploadImages"
+                      >
                         Upload Images ({totalCurrentImages}/5)
                       </label>
 
                       <div
-                        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                        aria-disabled={totalCurrentImages >= 5}
+                        aria-label={
+                          totalCurrentImages >= 5
+                            ? "Maximum 5 images reached"
+                            : "Upload image area, drag and drop or click to browse files"
+                        }
+                        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           dragActive
                             ? "border-blue-500 bg-blue-50"
                             : totalCurrentImages >= 5
                               ? "border-gray-300 bg-gray-50 cursor-not-allowed"
                               : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 cursor-pointer"
                         }`}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           if (totalCurrentImages < 5) {
                             document
@@ -574,6 +585,17 @@ export default function ProductDetailsModal({
                         onDragLeave={handleDrag}
                         onDragOver={handleDrag}
                         onDrop={handleDrop}
+                        onKeyDown={(e) => {
+                          if (
+                            (e.key === "Enter" || e.key === " ") &&
+                            totalCurrentImages < 5
+                          ) {
+                            e.preventDefault();
+                            document
+                              .getElementById("edit-image-upload-input")
+                              ?.click();
+                          }
+                        }}
                       >
                         <Input
                           multiple
@@ -586,14 +608,18 @@ export default function ProductDetailsModal({
 
                         {dragActive ? (
                           <div className="text-blue-600">
-                            <div className="text-3xl mb-2">📎</div>
+                            <div aria-hidden="true" className="text-3xl mb-2">
+                              📎
+                            </div>
                             <p className="text-lg font-medium">
                               Drop images here
                             </p>
                           </div>
                         ) : totalCurrentImages >= 5 ? (
                           <div className="text-gray-400">
-                            <div className="text-3xl mb-2">📸</div>
+                            <div aria-hidden="true" className="text-3xl mb-2">
+                              📸
+                            </div>
                             <p className="text-lg font-medium">
                               Maximum 5 images reached
                             </p>
@@ -603,7 +629,9 @@ export default function ProductDetailsModal({
                           </div>
                         ) : (
                           <div className="text-gray-600">
-                            <div className="text-3xl mb-2">📷</div>
+                            <div aria-hidden="true" className="text-3xl mb-2">
+                              📷
+                            </div>
                             <p className="text-lg font-medium">
                               Drag & drop images here or click to browse
                             </p>
@@ -640,16 +668,19 @@ export default function ProductDetailsModal({
                           key={`existing-${image.id}`}
                           className="relative group"
                         >
-                          <div
-                            className={`aspect-square rounded-lg overflow-hidden border-2 cursor-pointer ${
+                          <button
+                            aria-label={`View ${product.name} image ${index + 1}`}
+                            className={`w-full aspect-square rounded-lg overflow-hidden border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                               deletedExistingImages.includes(image.image_url)
                                 ? "border-red-300 bg-red-50"
                                 : "border-gray-200"
                             }`}
+                            type="button"
                             onClick={() => openImageModal(index, "existing")}
                           >
                             <img
-                              alt={`${product.name} - Image ${index + 1}`}
+                              alt="" // Empty alt as the button has aria-label
+                              aria-hidden="true" // Hide from screen readers as button handles the label
                               className={`w-full h-full object-cover transition-all duration-200 ${
                                 deletedExistingImages.includes(image.image_url)
                                   ? "opacity-50 grayscale"
@@ -657,98 +688,148 @@ export default function ProductDetailsModal({
                               }`}
                               src={image.image_url}
                             />
-                          </div>
+                          </button>
 
                           {/* Controls Overlay - Only in Edit Mode */}
                           {isEditing && (
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
-                              <div className="flex gap-2">
-                                {!deletedExistingImages.includes(
-                                  image.image_url,
-                                ) && (
-                                  <Button
-                                    className="min-w-0 w-10 h-10 p-0"
-                                    color="primary"
-                                    size="sm"
-                                    title="Download image"
-                                    variant="solid"
-                                    onPress={() =>
-                                      downloadExistingImage(
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                              {/* Existing Images */}
+                              {product.images?.map((image, index) => (
+                                <div
+                                  key={`existing-${image.id}`}
+                                  className="relative group"
+                                >
+                                  <button
+                                    aria-label={`View ${product.name} image ${index + 1}`}
+                                    className={`w-full aspect-square rounded-lg overflow-hidden border-2 ${
+                                      deletedExistingImages.includes(
                                         image.image_url,
-                                        index,
                                       )
+                                        ? "border-red-300 bg-red-50"
+                                        : "border-gray-200"
+                                    }`}
+                                    onClick={() =>
+                                      openImageModal(index, "existing")
                                     }
                                   >
-                                    <svg
-                                      className="w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                      />
-                                    </svg>
-                                  </Button>
-                                )}
+                                    <img
+                                      alt={`${product.name}`}
+                                      className={`w-full h-full object-cover transition-all duration-200 ${
+                                        deletedExistingImages.includes(
+                                          image.image_url,
+                                        )
+                                          ? "opacity-50 grayscale"
+                                          : ""
+                                      }`}
+                                      src={image.image_url}
+                                    />
+                                  </button>
 
-                                {deletedExistingImages.includes(
-                                  image.image_url,
-                                ) ? (
-                                  <Button
-                                    className="min-w-0 w-10 h-10 p-0"
-                                    color="success"
-                                    size="sm"
-                                    title="Restore image"
-                                    variant="solid"
-                                    onPress={() =>
-                                      restoreExistingImage(image.image_url)
-                                    }
-                                  >
-                                    <svg
-                                      className="w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
+                                  {/* Controls Overlay - Only in Edit Mode */}
+                                  {isEditing && (
+                                    <div
+                                      aria-label="Image actions"
+                                      className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                      role="group" // Add role for screen readers
                                     >
-                                      <path
-                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                      />
-                                    </svg>
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    className="min-w-0 w-10 h-10 p-0"
-                                    color="danger"
-                                    size="sm"
-                                    title="Remove image"
-                                    variant="solid"
-                                    onPress={() =>
-                                      removeExistingImage(image.image_url)
-                                    }
-                                  >
-                                    <svg
-                                      className="w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                      />
-                                    </svg>
-                                  </Button>
-                                )}
-                              </div>
+                                      <div className="flex gap-2">
+                                        {!deletedExistingImages.includes(
+                                          image.image_url,
+                                        ) && (
+                                          <Button
+                                            aria-label="Download image"
+                                            className="min-w-0 w-10 h-10 p-0"
+                                            color="primary"
+                                            size="sm"
+                                            variant="solid"
+                                            onPress={() =>
+                                              downloadExistingImage(
+                                                image.image_url,
+                                                index,
+                                              )
+                                            }
+                                          >
+                                            <svg
+                                              aria-hidden="true" // Hide from screen readers since button has label
+                                              className="w-4 h-4"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              viewBox="0 0 24 24"
+                                            >
+                                              <path
+                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                              />
+                                            </svg>
+                                          </Button>
+                                        )}
+
+                                        {deletedExistingImages.includes(
+                                          image.image_url,
+                                        ) ? (
+                                          <Button
+                                            aria-label="Restore image"
+                                            className="min-w-0 w-10 h-10 p-0"
+                                            color="success"
+                                            size="sm"
+                                            variant="solid"
+                                            onPress={() =>
+                                              restoreExistingImage(
+                                                image.image_url,
+                                              )
+                                            }
+                                          >
+                                            <svg
+                                              aria-hidden="true"
+                                              className="w-4 h-4"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              viewBox="0 0 24 24"
+                                            >
+                                              <path
+                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                              />
+                                            </svg>
+                                          </Button>
+                                        ) : (
+                                          <Button
+                                            aria-label="Remove image"
+                                            className="min-w-0 w-10 h-10 p-0"
+                                            color="danger"
+                                            size="sm"
+                                            variant="solid"
+                                            onPress={() =>
+                                              removeExistingImage(
+                                                image.image_url,
+                                              )
+                                            }
+                                          >
+                                            <svg
+                                              aria-hidden="true"
+                                              className="w-4 h-4"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              viewBox="0 0 24 24"
+                                            >
+                                              <path
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                              />
+                                            </svg>
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
                             </div>
                           )}
 
@@ -773,8 +854,10 @@ export default function ProductDetailsModal({
                       {/* New Images */}
                       {imagePreviews.map((src, i) => (
                         <div key={`new-${i}`} className="relative group">
-                          <div
-                            className="aspect-square rounded-lg overflow-hidden border-2 border-blue-200 bg-blue-50 cursor-pointer"
+                          <button
+                            aria-label={`View preview image ${i + 1}`}
+                            className="aspect-square rounded-lg overflow-hidden border-2 border-blue-200 bg-blue-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            type="button"
                             onClick={() => openImageModal(i, "new")}
                           >
                             <img
@@ -782,7 +865,7 @@ export default function ProductDetailsModal({
                               className="w-full h-full object-cover"
                               src={src}
                             />
-                          </div>
+                          </button>
 
                           {/* Controls Overlay */}
                           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -923,7 +1006,10 @@ export default function ProductDetailsModal({
                             />
                           ) : (
                             <div>
-                              <label className="text-sm font-medium text-gray-700">
+                              <label
+                                className="text-sm font-medium text-gray-700"
+                                htmlFor="escription"
+                              >
                                 Description
                               </label>
                               <p className="text-gray-900 mt-1">
@@ -948,7 +1034,10 @@ export default function ProductDetailsModal({
                             />
                           ) : (
                             <div>
-                              <label className="text-sm font-medium text-gray-700">
+                              <label
+                                className="text-sm font-medium text-gray-700"
+                                htmlFor="Price "
+                              >
                                 Price
                               </label>
                               <p className="text-2xl font-bold text-green-600 mt-1">
@@ -976,7 +1065,10 @@ export default function ProductDetailsModal({
                             />
                           ) : (
                             <div>
-                              <label className="text-sm font-medium text-gray-700">
+                              <label
+                                className="text-sm font-medium text-gray-700"
+                                htmlFor="stockquantity"
+                              >
                                 Stock Quantity
                               </label>
                               <p className="text-gray-900 mt-1">
@@ -996,7 +1088,10 @@ export default function ProductDetailsModal({
                         </h4>
                         <div className="space-y-4">
                           <div>
-                            <label className="text-sm font-medium text-gray-700">
+                            <label
+                              className="text-sm font-medium text-gray-700"
+                              htmlFor="forcategory"
+                            >
                               Category
                             </label>
                             {isEditing ? (
@@ -1031,7 +1126,10 @@ export default function ProductDetailsModal({
                           </div>
 
                           <div>
-                            <label className="text-sm font-medium text-gray-700">
+                            <label
+                              className="text-sm font-medium text-gray-700"
+                              htmlFor="availablity"
+                            >
                               Availability
                             </label>
                             {isEditing ? (
@@ -1075,7 +1173,10 @@ export default function ProductDetailsModal({
                           {isEditing &&
                             form.availability_type === "PRE_ORDER" && (
                               <div>
-                                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                <label
+                                  className="text-sm font-medium text-gray-700 mb-2 block"
+                                  htmlFor="available"
+                                >
                                   Preorder Available Date
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
@@ -1149,7 +1250,10 @@ export default function ProductDetailsModal({
                             product.availability_type === "PRE_ORDER" &&
                             product.preorder_available_date && (
                               <div>
-                                <label className="text-sm font-medium text-gray-700">
+                                <label
+                                  className="text-sm font-medium text-gray-700"
+                                  htmlFor="preorder"
+                                >
                                   Preorder Available Date
                                 </label>
                                 <p className="text-gray-900 mt-1">
@@ -1161,7 +1265,10 @@ export default function ProductDetailsModal({
                             )}
 
                           <div>
-                            <label className="text-sm font-medium text-gray-700">
+                            <label
+                              className="text-sm font-medium text-gray-700"
+                              htmlFor="status"
+                            >
                               Status
                             </label>
                             {isEditing ? (
