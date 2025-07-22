@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    outputFileTracingRoot: undefined,
+    // Add other experimental features here only if needed
   },
 };
 
