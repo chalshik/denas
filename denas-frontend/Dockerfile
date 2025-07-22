@@ -22,7 +22,6 @@ WORKDIR /app
 
 # Set Node.js environment to production
 ENV NODE_ENV production
-ENV PORT 3000
 
 # Create a non-root user for security
 RUN addgroup -g 1001 -S nodejs
