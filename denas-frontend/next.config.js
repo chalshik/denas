@@ -1,8 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  images: {
+    unoptimized: true
+  },
+  trailingSlash: false,
   experimental: {
-    // Add other experimental features here only if needed
+    // Enable if you need server actions or other experimental features
   },
 };
 

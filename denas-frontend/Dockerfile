@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci && npm cache clean --force
+RUN npm ci --only=production && npm cache clean --force
 
 # Copy the rest of the application code
 COPY . .
@@ -21,25 +21,27 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Set Node.js environment to production
-ENV NODE_ENV production
-ENV PORT 3000
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
 # Create a non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files from the builder stage
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-# Set proper ownership
-RUN chown -R nextjs:nodejs /app
+# Copy the standalone build
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Switch to non-root user
 USER nextjs
 
-# Expose the port Next.js runs on
+# Expose the port (Render will set PORT environment variable)
 EXPOSE 3000
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node --version || exit 1
+
 # Start the Next.js application
-CMD ["node", "server.js"] 
+CMD ["node", "server.js"]
