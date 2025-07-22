@@ -987,7 +987,7 @@ export default function ProductDetailsModal({
                             />
                           ) : (
                             <div>
-                              <label className="text-sm font-medium text-gray-700">
+                              <label htmlFor="productNAme" className="text-sm font-medium text-gray-700">
                                 Product Name
                               </label>
                               <p className="text-gray-900 mt-1">
