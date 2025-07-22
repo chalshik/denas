@@ -17,7 +17,7 @@ app = FastAPI(
 if settings.is_production:
     # Production: specify exact origins
     allowed_origins = [
-        "https://your-frontend-domain.com",  # Replace with your actual frontend domain
+        "https://denas-1.onrender.com",  # Replace with your actual frontend domain
         "https://www.your-frontend-domain.com",  # Replace with your actual frontend domain
     ]
 else:
