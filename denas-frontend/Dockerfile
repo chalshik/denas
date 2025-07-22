@@ -1,46 +1,27 @@
-# Stage 1: Install dependencies and build the project
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Copy package files first for better layer caching
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 COPY package*.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm ci && npm cache clean --force
-
-# Copy the rest of the application code
 COPY . .
-
-# Build the Next.js application
 RUN npm run build
 
-# Stage 2: Serve the application with a minimal image
-FROM node:20-alpine AS runner
 
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Set Node.js environment to production
-ENV NODE_ENV production
-ENV PORT 3000
-
-# Create a non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-# Copy necessary files from the builder stage
+ENV NODE_ENV=production
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
 
-# Set proper ownership
-RUN chown -R nextjs:nodejs /app
+# Only install production deps
+RUN npm ci --only=production
 
-# Switch to non-root user
-USER nextjs
-
-# Expose the port Next.js runs on
 EXPOSE 3000
-
-# Start the Next.js application
-CMD ["node", "server.js"] 
+CMD ["npm", "start"]
